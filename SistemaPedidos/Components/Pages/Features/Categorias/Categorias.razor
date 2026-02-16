@@ -1,0 +1,198 @@
+﻿@page "/categorias"
+@rendermode InteractiveServer
+@using SistemaPedidos.Application.Features.Categorias.DTOs
+@using SistemaPedidos.Application.Features.Categorias.Interfaces
+@using Microsoft.AspNetCore.Components.Forms
+@using System.IO
+@inject ICategoriaService CategoriaService
+@inject IWebHostEnvironment Environment
+
+<h3>Gestión de Categorías</h3>
+
+<div class="mb-3">
+    <input class="form-control"
+           @bind="nuevoNombre"
+           placeholder="Nueva categoría" />
+
+    <button class="btn btn-primary mt-2"
+            @onclick="CrearCategoria">
+        Agregar
+    </button>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Nombre</th>
+            <th>Imagen</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var categoria in categorias)
+        {
+            <tr>
+                <td>@categoria.Id</td>
+                <td>@categoria.Nombre</td>
+                <td>
+                    @if (!string.IsNullOrEmpty(categoria.ImagenUrl))
+                    {
+                        <img src="@categoria.ImagenUrl"
+                             style="width:50px; height:50px; object-fit:cover; border-radius:6px;" />
+                    }
+                </td>
+                <td>
+                    <button class="btn btn-warning btn-sm me-2"
+                            @onclick="() => AbrirModal(categoria)">
+                        Editar
+                    </button>
+
+                    <button class="btn btn-danger btn-sm"
+                            @onclick="() => Desactivar(categoria.Id)">
+                        Desactivar
+                    </button>
+                </td>
+
+            </tr>
+        }
+    </tbody>
+</table>
+@if (mostrarModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Categoría</h5>
+                    <button class="btn-close" @onclick="CerrarModal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Nombre</label>
+                        <input class="form-control" @bind="nombreEditar" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Imagen (opcional)</label>
+                        <InputFile OnChange="SeleccionarArchivo" />
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CerrarModal">
+                        Cancelar
+                    </button>
+
+                    <button class="btn btn-primary" @onclick="GuardarCambios">
+                        Guardar
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+
+    private List<CategoriaDto> categorias = new();
+    private string nuevoNombre = string.Empty;
+
+    // Variables para edición
+    private bool mostrarModal = false;
+    private CategoriaDto? categoriaSeleccionada;
+    private string nombreEditar = string.Empty;
+    private IBrowserFile? archivoSeleccionado;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarCategorias();
+    }
+
+    private async Task CargarCategorias()
+    {
+        categorias = await CategoriaService.ObtenerTodasAsync();
+    }
+
+    private async Task CrearCategoria()
+    {
+        if (string.IsNullOrWhiteSpace(nuevoNombre))
+            return;
+
+        await CategoriaService.CrearAsync(
+            new CrearCategoriaDto
+            {
+                Nombre = nuevoNombre
+            });
+
+        nuevoNombre = string.Empty;
+
+        await CargarCategorias();
+    }
+
+    private async Task Desactivar(int id)
+    {
+        await CategoriaService.DesactivarAsync(id);
+        await CargarCategorias();
+    }
+
+    private void AbrirModal(CategoriaDto categoria)
+    {
+        categoriaSeleccionada = categoria;
+        nombreEditar = categoria.Nombre;
+        mostrarModal = true;
+    }
+
+    private void CerrarModal()
+    {
+        mostrarModal = false;
+        categoriaSeleccionada = null;
+        archivoSeleccionado = null;
+    }
+
+    private void SeleccionarArchivo(InputFileChangeEventArgs e)
+    {
+        archivoSeleccionado = e.File;
+    }
+
+    private async Task GuardarCambios()
+    {
+        if (categoriaSeleccionada == null)
+            return;
+
+        string? rutaImagen = categoriaSeleccionada.ImagenUrl;
+
+        // Si el usuario seleccionó archivo nuevo
+        if (archivoSeleccionado != null)
+        {
+            var carpeta = Path.Combine(Environment.WebRootPath, "images", "categorias");
+
+            if (!Directory.Exists(carpeta))
+                Directory.CreateDirectory(carpeta);
+
+            var nombreArchivo = $"{Guid.NewGuid()}_{archivoSeleccionado.Name}";
+            var rutaCompleta = Path.Combine(carpeta, nombreArchivo);
+
+            using var stream = new FileStream(rutaCompleta, FileMode.Create);
+            await archivoSeleccionado.OpenReadStream().CopyToAsync(stream);
+
+            rutaImagen = $"/images/categorias/{nombreArchivo}";
+        }
+
+        await CategoriaService.ActualizarAsync(new ActualizarCategoriaDto
+        {
+            Id = categoriaSeleccionada.Id,
+            Nombre = nombreEditar,
+            ImagenUrl = rutaImagen
+        });
+
+        await CargarCategorias();
+
+        CerrarModal();
+    }
+
+}
