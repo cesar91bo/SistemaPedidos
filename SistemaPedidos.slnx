@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Elementos de la solución/">
+    <File Path=".gitignore" />
+  </Folder>
   <Project Path="SistemaPedidos.Application/SistemaPedidos.Application.csproj" Id="88c40273-6b82-4d02-a75c-ec752757679d" />
   <Project Path="SistemaPedidos.Domain/SistemaPedidos.Domain.csproj" Id="55b3b9f0-68b7-4e96-8748-af9234a3716c" />
   <Project Path="SistemaPedidos.Infrastructure/SistemaPedidos.Infrastructure.csproj" Id="b801fa74-4fb4-47c7-8dab-3217731ae1c3" />

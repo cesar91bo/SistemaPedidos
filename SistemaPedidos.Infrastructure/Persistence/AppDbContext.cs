@@ -46,10 +46,18 @@ public class AppDbContext : DbContext
             .WithMany(v => v.Pagos)
             .HasForeignKey(p => p.VentaId);
 
-        // Configuración de precisión para dinero
         modelBuilder.Entity<Pedido>()
-            .Property(p => p.Total)
+            .Property(p => p.PrecioEnvio)
             .HasPrecision(18, 2);
+
+        modelBuilder.Entity<Pedido>()
+            .Property(p => p.TotalProductos)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<Pedido>()
+            .Property(p => p.TotalGeneral)
+            .HasPrecision(18, 2);
+
 
         modelBuilder.Entity<PedidoItem>()
             .Property(p => p.PrecioUnitario)
