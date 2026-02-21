@@ -1,0 +1,253 @@
+﻿@page "/productos"
+@rendermode InteractiveServer
+
+@using Microsoft.AspNetCore.Components.Forms
+@using SistemaPedidos.Application.Features.Categorias.DTOs
+@using SistemaPedidos.Application.Features.Categorias.Interfaces
+@using SistemaPedidos.Application.Features.Productos.DTOs
+@using SistemaPedidos.Application.Features.Productos.Interfaces
+
+@inject IProductoService ProductoService
+@inject ICategoriaService CategoriaService
+
+<h3>Gestión de Productos</h3>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="AbrirCrear">
+        Nuevo Producto
+    </button>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Imagen</th>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Precio</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var producto in productos)
+        {
+            <tr>
+                <td>@producto.Id</td>
+
+                <td>
+                    @if (!string.IsNullOrEmpty(producto.ImagenUrl))
+                    {
+                        <img src="@producto.ImagenUrl"
+                             style="width:50px; height:50px; object-fit:cover;" />
+                    }
+                </td>
+
+                <td>@producto.Nombre</td>
+                <td>@producto.CategoriaNombre</td>
+                <td>@producto.PrecioActual.ToString("C")</td>
+
+                <td>
+                    <button class="btn btn-warning btn-sm me-2"
+                            @onclick="() => AbrirEditar(producto)">
+                        Editar
+                    </button>
+
+                    <button class="btn btn-danger btn-sm"
+                            @onclick="() => Desactivar(producto.Id)">
+                        Desactivar
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+
+</table>
+
+@if (mostrarModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">@(modoEdicion ? "Editar Producto" : "Nuevo Producto")</h5>
+                    <button class="btn-close" @onclick="CerrarModal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label>Nombre</label>
+                        <input class="form-control" @bind="form.Nombre" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Categoría</label>
+                        <select class="form-select" @bind="form.CategoriaId">
+                            <option value="0">Seleccione</option>
+                            @foreach (var cat in categorias)
+                            {
+                                <option value="@cat.Id">@cat.Nombre</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Precio</label>
+                        <input type="number" step="0.01" class="form-control" @bind="form.Precio" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Imagen (opcional)</label>
+                        <InputFile OnChange="SeleccionarArchivo" />
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CerrarModal">Cancelar</button>
+                    <button class="btn btn-primary" @onclick="GuardarProducto">Guardar</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ProductoDto> productos = new();
+    private List<CategoriaDto> categorias = new();
+
+    private bool mostrarModal = false;
+    private bool modoEdicion = false;
+
+    private int? productoIdEditando = null;
+    private ProductoFormModel form = new();
+
+    private IBrowserFile? archivoSeleccionado;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarProductos();
+        categorias = await CategoriaService.ObtenerSoloActivosAsync();
+    }
+
+    private async Task CargarProductos()
+    {
+        productos = await ProductoService.ObtenerTodosAsync();
+    }
+
+    private void AbrirCrear()
+    {
+        modoEdicion = false;
+        productoIdEditando = null;
+        form = new ProductoFormModel();
+        archivoSeleccionado = null;
+        mostrarModal = true;
+    }
+
+    private void AbrirEditar(ProductoDto producto)
+    {
+        modoEdicion = true;
+        productoIdEditando = producto.Id;
+
+        form = new ProductoFormModel
+        {
+            Nombre = producto.Nombre,
+            CategoriaId = producto.CategoriaId,
+            Precio = producto.PrecioActual,
+            ImagenUrl = producto.ImagenUrl
+        };
+
+        archivoSeleccionado = null;
+        mostrarModal = true;
+    }
+
+    private async Task Desactivar(int id)
+    {
+        await ProductoService.DesactivarAsync(id);
+        await CargarProductos();
+    }
+
+    private void CerrarModal()
+    {
+        mostrarModal = false;
+        archivoSeleccionado = null;
+    }
+
+    private void SeleccionarArchivo(InputFileChangeEventArgs e)
+    {
+        archivoSeleccionado = e.File;
+    }
+
+    private async Task GuardarProducto()
+    {
+        ValidarDatos();
+
+        // 👉 Si se seleccionó archivo, lo guardamos
+        if (archivoSeleccionado != null)
+        {
+            var extension = Path.GetExtension(archivoSeleccionado.Name);
+            var nombreArchivo = $"{Guid.NewGuid()}{extension}";
+            var rutaCarpeta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "productos");
+
+            if (!Directory.Exists(rutaCarpeta))
+                Directory.CreateDirectory(rutaCarpeta);
+
+            var rutaCompleta = Path.Combine(rutaCarpeta, nombreArchivo);
+
+            using var stream = new FileStream(rutaCompleta, FileMode.Create);
+            await archivoSeleccionado.OpenReadStream(5_000_000).CopyToAsync(stream);
+
+            form.ImagenUrl = $"/images/productos/{nombreArchivo}";
+        }
+
+        if (!modoEdicion)
+        {
+            await ProductoService.CrearAsync(new CrearProductoDto
+            {
+                Nombre = form.Nombre,
+                CategoriaId = form.CategoriaId,
+                PrecioInicial = form.Precio,
+                ImagenUrl = form.ImagenUrl
+            });
+        }
+        else
+        {
+            if (productoIdEditando == null)
+                return;
+
+            await ProductoService.ActualizarAsync(new ActualizarProductoDto
+            {
+                Id = productoIdEditando.Value,
+                Nombre = form.Nombre,
+                CategoriaId = form.CategoriaId,
+                PrecioNuevo = form.Precio,
+                ImagenUrl = form.ImagenUrl
+            });
+        }
+
+        await CargarProductos();
+        CerrarModal();
+    }
+
+    private void ValidarDatos()
+    {
+        if (string.IsNullOrWhiteSpace(form.Nombre))
+            throw new Exception("El nombre es obligatorio.");
+        if (form.CategoriaId == 0)
+            throw new Exception("Debe seleccionar una categoría.");
+        if (form.Precio <= 0)
+            throw new Exception("El precio debe ser mayor a cero.");
+    }
+
+
+    private class ProductoFormModel
+    {
+        public string Nombre { get; set; } = string.Empty;
+        public int CategoriaId { get; set; }
+        public decimal Precio { get; set; }
+        public string? ImagenUrl { get; set; }
+    }
+}

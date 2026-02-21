@@ -8,6 +8,7 @@ public class PedidoItem
     public Pedido? Pedido { get; set; }
 
     public int ProductoId { get; set; }
+    public Producto? Producto { get; set; }
     public string NombreProducto { get; set; } = string.Empty; // Snapshot
 
     public int Cantidad { get; set; }

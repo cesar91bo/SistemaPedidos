@@ -1,0 +1,312 @@
+﻿@page "/pedidos"
+@rendermode InteractiveServer
+
+@using SistemaPedidos.Application.Features.Pedidos.DTOs
+@using SistemaPedidos.Application.Features.Pedidos.Interfaces
+@using SistemaPedidos.Application.Features.Productos.DTOs
+@using SistemaPedidos.Application.Features.Productos.Interfaces
+
+@inject IPedidoService PedidoService
+@inject IProductoService ProductoService
+
+<h3>Gestión de Pedidos</h3>
+
+<div class="row">
+
+    <!-- Panel creación -->
+    <div class="col-md-6 border p-3">
+
+        <h5>Nuevo Pedido</h5>
+
+        <div class="mb-2">
+            <label>Nombre Cliente</label>
+            <input class="form-control" @bind="nombreCliente" />
+        </div>
+
+        <div class="mb-2">
+            <label>Teléfono</label>
+            <input class="form-control" @bind="telefono" />
+        </div>
+
+        <div class="mb-2">
+            <label>Tipo Pedido</label>
+            <select class="form-select" @bind="tipoPedido">
+                <option value="1">Retiro</option>
+                <option value="2">Delivery</option>
+            </select>
+        </div>
+
+        @if (tipoPedido == 2)
+        {
+            <div class="mb-2">
+                <label>Dirección</label>
+                <input class="form-control" @bind="direccion" />
+            </div>
+
+            <div class="mb-2">
+                <label>Precio Envío</label>
+                <input type="number" class="form-control" @bind="precioEnvio" />
+            </div>
+        }
+
+        <hr />
+
+        <h6>Agregar Producto</h6>
+
+        <select class="form-select mb-2" @bind="productoSeleccionadoId">
+            <option value="0">Seleccione producto</option>
+            @foreach (var p in productos)
+            {
+                <option value="@p.Id">@p.Nombre (@p.PrecioActual.ToString("C"))</option>
+            }
+        </select>
+
+        <input type="number" class="form-control mb-2" @bind="cantidad" placeholder="Cantidad" />
+
+        <button class="btn btn-success" @onclick="AgregarItem">
+            Agregar
+        </button>
+
+        <hr />
+
+        <h6>Items</h6>
+
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cant</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in items)
+                {
+                    <tr>
+                        <td>@item.ProductoNombre</td>
+                        <td>@item.Cantidad</td>
+                        <td>@item.Subtotal.ToString("C")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+    </div>
+
+    <!-- Panel resumen -->
+    <div class="col-md-6 border p-3">
+
+        <h5>Resumen</h5>
+
+        <p>Total Productos: @totalProductos.ToString("C")</p>
+        <p>Envío: @precioEnvio.ToString("C")</p>
+        <hr />
+        <h4>Total General: @totalGeneral.ToString("C")</h4>
+
+        <button class="btn btn-primary"
+                disabled="@guardando"
+                @onclick="GuardarPedido">
+            Guardar Pedido
+        </button>
+
+    </div>
+
+    <hr />
+
+    <h4>Pedidos Activos</h4>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Cliente</th>
+                <th>Tipo</th>
+                <th>Detalle</th>
+                <th>Estado</th>
+                <th>Total</th>
+                <th>Hora</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pedido in pedidosActivos)
+            {
+                <tr>
+                    <td>@pedido.Id</td>
+                    <td>@pedido.NombreCliente</td>
+                    <td>@pedido.TipoPedidoNombre</td>
+                    <td>
+                        @foreach (var item in pedido.Items)
+                        {
+                            <div>
+                                @item.Cantidad x @item.ProductoNombre
+                            </div>
+                        }
+                    </td>
+                    <td>@pedido.EstadoNombre</td>
+                    <td>@pedido.TotalGeneral.ToString("C")</td>
+                    <td>@pedido.Fecha.ToString("HH:mm")</td>
+                    <td>
+                        @if (pedido.Estado == 1)   // Pendiente
+                        {
+                            <button class="btn btn-sm btn-primary"
+                                    @onclick="() => CambiarEstado(pedido.Id, 2)">
+                                Tomar
+                            </button>
+                        }
+                        else if (pedido.Estado == 2)  // EnProceso
+                        {
+                            <button class="btn btn-sm btn-success"
+                                    @onclick="() => CambiarEstado(pedido.Id, 3)">
+                                Listo
+                            </button>
+                        }
+                        else if (pedido.Estado == 3)  // Listo
+                        {
+                            if (pedido.TipoPedido == 2) // Delivery
+                            {
+                                <button class="btn btn-sm btn-warning"
+                                        @onclick="() => CambiarEstado(pedido.Id, 4)">
+                                    Enviar
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-dark"
+                                        @onclick="() => CambiarEstado(pedido.Id, 5)">
+                                    Entregado
+                                </button>
+                            }
+                        }
+                        else if (pedido.Estado == 4) // Enviado
+                        {
+                            <button class="btn btn-sm btn-dark"
+                                    @onclick="() => CambiarEstado(pedido.Id, 5)">
+                                Entregado
+                            </button>
+                        }
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+
+    </table>
+
+
+</div>
+
+@code {
+
+    private List<ProductoDto> productos = new();
+    private List<PedidoItemDto> items = new();
+
+    private string nombreCliente = "";
+    private string telefono = "";
+    private string? direccion;
+
+    private int tipoPedido = 1;
+    private decimal precioEnvio = 0;
+
+    private int productoSeleccionadoId = 0;
+    private int cantidad = 1;
+
+    private decimal totalProductos => items.Sum(i => i.Subtotal);
+    private decimal totalGeneral => totalProductos + precioEnvio;
+
+    private bool guardando = false;
+    private List<PedidoDto> pedidosActivos = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        productos = await ProductoService.ObtenerTodosAsync();
+        await CargarPedidosActivos();
+    }
+
+    private async Task CargarPedidosActivos()
+    {
+        pedidosActivos = await PedidoService.ObtenerActivosAsync();
+    }
+
+
+    private void AgregarItem()
+    {
+        var producto = productos.FirstOrDefault(p => p.Id == productoSeleccionadoId);
+        if (producto == null || cantidad <= 0)
+            return;
+
+        var itemExistente = items.FirstOrDefault(i => i.ProductoId == producto.Id);
+
+        if (itemExistente != null)
+        {
+            itemExistente.Cantidad += cantidad;
+            itemExistente.Subtotal = itemExistente.Cantidad * itemExistente.PrecioUnitario;
+        }
+        else
+        {
+            items.Add(new PedidoItemDto
+            {
+                ProductoId = producto.Id,
+                ProductoNombre = producto.Nombre,
+                Cantidad = cantidad,
+                PrecioUnitario = producto.PrecioActual,
+                Subtotal = producto.PrecioActual * cantidad
+            });
+        }
+
+        productoSeleccionadoId = 0;
+        cantidad = 1;
+    }
+
+
+    private async Task GuardarPedido()
+    {
+        if (!items.Any())
+            return;
+
+        if (guardando)
+            return;
+
+        guardando = true;
+
+        try
+        {
+            var dto = new CrearPedidoDto
+                {
+                    NombreCliente = nombreCliente,
+                    Telefono = telefono,
+                    Direccion = direccion,
+                    TipoPedido = tipoPedido,
+                    PrecioEnvio = precioEnvio,
+                    Items = items.Select(i => new CrearPedidoItemDto
+                    {
+                        ProductoId = i.ProductoId,
+                        Cantidad = i.Cantidad
+                    }).ToList()
+                };
+
+            await PedidoService.CrearAsync(dto);
+
+            // reset
+            nombreCliente = "";
+            telefono = "";
+            direccion = null;
+            precioEnvio = 0;
+            items.Clear();
+
+            await CargarPedidosActivos(); 
+        }
+        finally
+        {
+            guardando = false;
+        }
+
+    }
+
+    private async Task CambiarEstado(int pedidoId, int nuevoEstado)
+    {
+        await PedidoService.CambiarEstadoAsync(pedidoId, nuevoEstado);
+        await CargarPedidosActivos();
+    }
+
+}

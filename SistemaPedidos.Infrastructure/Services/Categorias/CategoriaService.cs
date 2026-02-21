@@ -18,6 +18,18 @@ public class CategoriaService : ICategoriaService
     public async Task<List<CategoriaDto>> ObtenerTodasAsync()
     {
         return await _context.Categorias
+            .Select(c => new CategoriaDto
+            {
+                Id = c.Id,
+                Nombre = c.Nombre,
+                ImagenUrl = c.ImagenUrl
+            })
+            .ToListAsync();
+    }
+
+    public async Task<List<CategoriaDto>> ObtenerSoloActivosAsync()
+    {
+        return await _context.Categorias
             .Where(c => c.Activo)
             .Select(c => new CategoriaDto
             {
