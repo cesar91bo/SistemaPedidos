@@ -5,9 +5,16 @@
 @using SistemaPedidos.Application.Features.Pedidos.Interfaces
 @using SistemaPedidos.Application.Features.Productos.DTOs
 @using SistemaPedidos.Application.Features.Productos.Interfaces
+@using SistemaPedidos.Application.Features.Ventas
+@using SistemaPedidos.Application.Features.Ventas.DTOs
+@using SistemaPedidos.Domain.Enums
+@using SistemaPedidos.Infrastructure.Services.Ventas
+@using System.ComponentModel.DataAnnotations
+@using System.Reflection
 
 @inject IPedidoService PedidoService
 @inject IProductoService ProductoService
+@inject IVentaService VentaService
 
 <h3>Gestión de Pedidos</h3>
 
@@ -147,42 +154,18 @@
                     <td>@pedido.TotalGeneral.ToString("C")</td>
                     <td>@pedido.Fecha.ToString("HH:mm")</td>
                     <td>
-                        @if (pedido.Estado == 1)   // Pendiente
+                        @if (pedido.Estado == (int)EstadoPedido.EnProceso)
                         {
-                            <button class="btn btn-sm btn-primary"
-                                    @onclick="() => CambiarEstado(pedido.Id, 2)">
-                                Tomar
+                            <button class="btn btn-sm btn-warning"
+                                    @onclick="() => CambiarEstado(pedido.Id, (int)EstadoPedido.Enviado)">
+                                Enviar
                             </button>
                         }
-                        else if (pedido.Estado == 2)  // EnProceso
+                        else if (pedido.Estado == (int)EstadoPedido.Enviado)
                         {
                             <button class="btn btn-sm btn-success"
-                                    @onclick="() => CambiarEstado(pedido.Id, 3)">
-                                Listo
-                            </button>
-                        }
-                        else if (pedido.Estado == 3)  // Listo
-                        {
-                            if (pedido.TipoPedido == 2) // Delivery
-                            {
-                                <button class="btn btn-sm btn-warning"
-                                        @onclick="() => CambiarEstado(pedido.Id, 4)">
-                                    Enviar
-                                </button>
-                            }
-                            else
-                            {
-                                <button class="btn btn-sm btn-dark"
-                                        @onclick="() => CambiarEstado(pedido.Id, 5)">
-                                    Entregado
-                                </button>
-                            }
-                        }
-                        else if (pedido.Estado == 4) // Enviado
-                        {
-                            <button class="btn btn-sm btn-dark"
-                                    @onclick="() => CambiarEstado(pedido.Id, 5)">
-                                Entregado
+                                    @onclick="() => AbrirCobro(pedido)">
+                                Cobrar
                             </button>
                         }
                     </td>
@@ -193,6 +176,60 @@
 
     </table>
 
+    @if (mostrarModalCobro && pedidoCobro != null)
+    {
+        <div class="modal show d-block" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content p-3">
+
+                    <h5>Cobrar Pedido #@pedidoCobro.Id</h5>
+
+                    <p>Total: @pedidoCobro.TotalGeneral.ToString("C")</p>
+
+                    @foreach (var pago in pagos)
+                    {
+                        <div class="row mb-2">
+                            <div class="col">
+                                <select class="form-select" @bind="pago.FormaPago">
+                                    @foreach (var forma in Enum.GetValues<FormaPago>())
+                                    {
+                                        <option value="@forma">
+                                            @(forma.GetType().GetField(forma.ToString())?.GetCustomAttribute<DisplayAttribute>()?.Name ?? forma.ToString())
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col">
+                                <input type="number"
+                                       class="form-control"
+                                       @bind="pago.Monto" />
+                            </div>
+                        </div>
+                    }
+
+                    <button class="btn btn-secondary mb-2"
+                            @onclick="() => pagos.Add(new RegistrarPagoDto { FormaPago = FormaPago.Efectivo, Monto = Saldo })">
+                        Agregar otro medio
+                    </button>
+
+                    <p>Total Pagado: @TotalPagado.ToString("C")</p>
+                    <p>Saldo: @Saldo.ToString("C")</p>
+
+                    <button class="btn btn-success"
+                            disabled="@(TotalPagado != pedidoCobro.TotalGeneral)"
+                            @onclick="ConfirmarCobro">
+                        Confirmar
+                    </button>
+
+                    <button class="btn btn-danger"
+                            @onclick="() => mostrarModalCobro = false">
+                        Cancelar
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    }
 
 </div>
 
@@ -216,6 +253,13 @@
 
     private bool guardando = false;
     private List<PedidoDto> pedidosActivos = new();
+
+    private PedidoDto? pedidoCobro;
+    private List<RegistrarPagoDto> pagos = new();
+    private bool mostrarModalCobro = false;
+
+    private decimal TotalPagado => pagos.Sum(p => p.Monto);
+    private decimal Saldo => (pedidoCobro?.TotalGeneral ?? 0) - TotalPagado;
 
     protected override async Task OnInitializedAsync()
     {
@@ -272,18 +316,18 @@
         try
         {
             var dto = new CrearPedidoDto
+            {
+                NombreCliente = nombreCliente,
+                Telefono = telefono,
+                Direccion = direccion,
+                TipoPedido = tipoPedido,
+                PrecioEnvio = precioEnvio,
+                Items = items.Select(i => new CrearPedidoItemDto
                 {
-                    NombreCliente = nombreCliente,
-                    Telefono = telefono,
-                    Direccion = direccion,
-                    TipoPedido = tipoPedido,
-                    PrecioEnvio = precioEnvio,
-                    Items = items.Select(i => new CrearPedidoItemDto
-                    {
-                        ProductoId = i.ProductoId,
-                        Cantidad = i.Cantidad
-                    }).ToList()
-                };
+                    ProductoId = i.ProductoId,
+                    Cantidad = i.Cantidad
+                }).ToList()
+            };
 
             await PedidoService.CrearAsync(dto);
 
@@ -294,7 +338,7 @@
             precioEnvio = 0;
             items.Clear();
 
-            await CargarPedidosActivos(); 
+            await CargarPedidosActivos();
         }
         finally
         {
@@ -306,6 +350,30 @@
     private async Task CambiarEstado(int pedidoId, int nuevoEstado)
     {
         await PedidoService.CambiarEstadoAsync(pedidoId, nuevoEstado);
+        await CargarPedidosActivos();
+    }
+
+    private void AbrirCobro(PedidoDto pedido)
+    {
+        pedidoCobro = pedido;
+        pagos = new List<RegistrarPagoDto>
+        {
+            new RegistrarPagoDto { FormaPago = FormaPago.Efectivo, Monto = pedido.TotalGeneral }
+        };
+        mostrarModalCobro = true;
+    }
+
+    private async Task ConfirmarCobro()
+    {
+        if (pedidoCobro == null)
+            return;
+
+        if (TotalPagado != pedidoCobro.TotalGeneral)
+            return;
+
+        await VentaService.RegistrarVentaAsync(pedidoCobro.Id, pagos);
+
+        mostrarModalCobro = false;
         await CargarPedidosActivos();
     }
 

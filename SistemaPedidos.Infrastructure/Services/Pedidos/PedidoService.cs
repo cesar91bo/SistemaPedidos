@@ -91,7 +91,7 @@ public class PedidoService : IPedidoService
             Telefono = dto.Telefono,
             Direccion = dto.Direccion,
             TipoPedido = (TipoPedido)dto.TipoPedido,
-            Estado = EstadoPedido.Pendiente,
+            Estado = EstadoPedido.EnProceso,
             PrecioEnvio = dto.PrecioEnvio
         };
 

@@ -8,8 +8,9 @@ namespace SistemaPedidos.Domain.Enums;
 
 public enum EstadoPago
 {
-    Pendiente = 1,
-    Parcial = 2,
-    Pagado = 3
+    Pendiente = 0,
+    Parcial = 1,
+    Pagado = 2,
+    Anulada = 3
 }
 

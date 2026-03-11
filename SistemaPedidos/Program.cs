@@ -2,11 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using SistemaPedidos.Application.Features.Categorias.Interfaces;
 using SistemaPedidos.Application.Features.Pedidos.Interfaces;
 using SistemaPedidos.Application.Features.Productos.Interfaces;
+using SistemaPedidos.Application.Features.Ventas;
 using SistemaPedidos.Components;
 using SistemaPedidos.Infrastructure.Persistence;
 using SistemaPedidos.Infrastructure.Services.Categorias;
 using SistemaPedidos.Infrastructure.Services.Pedidos;
 using SistemaPedidos.Infrastructure.Services.Productos;
+using SistemaPedidos.Infrastructure.Services.Ventas;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +25,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<ICategoriaService, CategoriaService>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 builder.Services.AddScoped<IPedidoService, PedidoService>();
-
+builder.Services.AddScoped<IVentaService, VentaService>();
 
 
 var app = builder.Build();

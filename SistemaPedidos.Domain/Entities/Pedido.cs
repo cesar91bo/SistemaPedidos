@@ -10,7 +10,7 @@ public class Pedido
 
     public TipoPedido TipoPedido { get; set; }
 
-    public EstadoPedido Estado { get; set; } = EstadoPedido.Pendiente;
+    public EstadoPedido Estado { get; set; } = EstadoPedido.EnProceso;
 
     // Datos del cliente
     public string NombreCliente { get; set; } = string.Empty;

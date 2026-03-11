@@ -1,19 +1,22 @@
 ﻿using SistemaPedidos.Domain.Enums;
 
-namespace SistemaPedidos.Domain.Entities;
+namespace SistemaPedidos.Application.Features.Ventas.DTOs;
 
-public class Venta
+public class VentaDto
 {
     public int Id { get; set; }
+
     public int PedidoId { get; set; }
-    public DateTime FechaVenta { get; set; }
 
     public decimal TotalProductos { get; set; }
+
     public decimal TotalEnvio { get; set; }
+
     public decimal TotalGeneral { get; set; }
 
-    public bool Anulada { get; set; }
+    public EstadoPago EstadoPago { get; set; }
 
-    public List<Pago> Pagos { get; set; } = new();
-    public Pedido Pedido { get; set; } = null!;
+    public bool CajaImpactada { get; set; }
+
+    public List<PagoDto> Pagos { get; set; } = new();
 }

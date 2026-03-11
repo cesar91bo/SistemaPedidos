@@ -41,10 +41,17 @@ public class AppDbContext : DbContext
             .HasForeignKey<Venta>(v => v.PedidoId);
 
         // Pago relación
-        modelBuilder.Entity<Pago>()
-            .HasOne(p => p.Venta)
-            .WithMany(v => v.Pagos)
-            .HasForeignKey(p => p.VentaId);
+        modelBuilder.Entity<Venta>()
+        .Property(v => v.TotalProductos)
+        .HasPrecision(18, 2);
+
+        modelBuilder.Entity<Venta>()
+            .Property(v => v.TotalEnvio)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<Venta>()
+            .Property(v => v.TotalGeneral)
+            .HasPrecision(18, 2);
 
         modelBuilder.Entity<Pedido>()
             .Property(p => p.PrecioEnvio)
@@ -69,10 +76,6 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<PrecioProducto>()
             .Property(p => p.Importe)
-            .HasPrecision(18, 2);
-
-        modelBuilder.Entity<Venta>()
-            .Property(v => v.TotalVenta)
             .HasPrecision(18, 2);
 
         modelBuilder.Entity<Pago>()

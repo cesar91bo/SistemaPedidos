@@ -8,10 +8,8 @@ namespace SistemaPedidos.Domain.Enums;
 
 public enum EstadoPedido
 {
-    Pendiente = 1,
-    EnProceso = 2,
-    Listo = 3,
-    Enviado = 4,
-    Terminado = 5,
-    Cancelado = 6
+    EnProceso = 1,
+    Enviado = 2,
+    Terminado = 3,
+    Cancelado = 4
 }
