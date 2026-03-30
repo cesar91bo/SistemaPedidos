@@ -1,33 +1,148 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="container-fluid">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">Sistema Pedidos</a>
+<div class="app-layout">
 
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <NavLink class="nav-link" href="/categorias">
-                            Categorías
-                        </NavLink>
-                    </li>
-                    <li class="nav-item">
-                        <NavLink class="nav-link" href="/productos">
-                            Productos
-                        </NavLink>
-                    </li>
-                    <li class="nav-item">
-                        <NavLink class="nav-link" href="/pedidos">
-                            Pedidos
-                        </NavLink>
-                    </li>
-                </ul>
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-circle">🍽️</div>
+            <div>
+                <h2>Sistema Pedidos</h2>
+                <small>Restaurante</small>
             </div>
         </div>
-    </nav>
 
-    <div class="container">
-        @Body
-    </div>
+        <nav class="sidebar-menu">
+            <NavLink class="menu-item" href="/" Match="NavLinkMatch.All">
+                <span class="menu-icon">📊</span>
+                Dashboard
+            </NavLink>
+
+            <NavLink class="menu-item" href="/pedidos">
+                <span class="menu-icon">🧾</span>
+                Pedidos
+            </NavLink>
+
+            <NavLink class="menu-item" href="/productos">
+                <span class="menu-icon">🍔</span>
+                Productos
+            </NavLink>
+
+            <NavLink class="menu-item" href="/categorias">
+                <span class="menu-icon">📂</span>
+                Categorías
+            </NavLink>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <h1>Panel Principal</h1>
+                <span>@DateTime.Now.ToString("dddd dd 'de' MMMM")</span>
+            </div>
+
+            <a class="new-order-btn" href="/pedidos">+ Nuevo Pedido</a>
+        </header>
+
+        <section class="page-content">
+            @Body
+        </section>
+    </main>
+
 </div>
+
+<style>
+    .app-layout {
+        display: flex;
+        min-height: 100vh;
+        background: #f3f4f6;
+    }
+
+    .sidebar {
+        width: 260px;
+        min-width: 260px;
+        background: linear-gradient(180deg, #111827, #1f2937);
+        color: white;
+        padding: 24px 18px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 40px;
+    }
+
+    .logo-circle {
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        background: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+    }
+
+    .sidebar-header h2 {
+        margin: 0;
+        color: white;
+        font-size: 22px;
+    }
+
+    .sidebar-header small {
+        color: #9ca3af;
+    }
+
+    .sidebar-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .menu-item {
+        color: #d1d5db !important;
+        text-decoration: none;
+        padding: 14px 16px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 500;
+    }
+
+        .menu-item:hover {
+            background: rgba(255,255,255,.08);
+            color: white !important;
+        }
+
+        .menu-item.active,
+        .menu-item[aria-current="page"] {
+            background: #2563eb;
+            color: white !important;
+        }
+
+    .main-content {
+        flex: 1;
+        padding: 28px;
+    }
+
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 28px;
+    }
+
+    .new-order-btn {
+        background: #2563eb;
+        color: white !important;
+        text-decoration: none;
+        padding: 12px 18px;
+        border-radius: 14px;
+        display: inline-block;
+    }
+</style>
