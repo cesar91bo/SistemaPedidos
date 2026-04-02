@@ -79,13 +79,21 @@
 
                     <div class="mb-3">
                         <label>Nombre</label>
-                        <input class="form-control" @bind="form.Nombre" />
+                        <input class="form-control @(intentoGuardar && string.IsNullOrWhiteSpace(form.Nombre) ? "is-invalid" : "")"
+                               @bind="form.Nombre" />
+
+                        @if (intentoGuardar && string.IsNullOrWhiteSpace(form.Nombre))
+                        {
+                            <div class="invalid-feedback">
+                                El nombre es obligatorio.
+                            </div>
+                        }
                     </div>
 
                     <div class="mb-3">
                         <label>Categoría</label>
                         <select class="form-select" @bind="form.CategoriaId">
-                            <option value="0">Seleccione</option>
+                            <option value="">Seleccione</option>
                             @foreach (var cat in categorias)
                             {
                                 <option value="@cat.Id">@cat.Nombre</option>
@@ -95,7 +103,16 @@
 
                     <div class="mb-3">
                         <label>Precio</label>
-                        <input type="number" step="0.01" class="form-control" @bind="form.Precio" />
+                        <input type="number" step="0.01"
+                               class="form-control @(intentoGuardar && form.Precio <= 0 ? "is-invalid" : "")"
+                               @bind="form.Precio" />
+
+                        @if (intentoGuardar && form.Precio <= 0)
+                        {
+                            <div class="invalid-feedback">
+                                El precio debe ser mayor a cero.
+                            </div>
+                        }
                     </div>
 
                     <div class="mb-3">
@@ -104,6 +121,12 @@
                     </div>
 
                 </div>
+                @if (!string.IsNullOrEmpty(errorMensaje))
+                {
+                    <div class="alert alert-danger">
+                        @errorMensaje
+                    </div>
+                }
 
                 <div class="modal-footer">
                     <button class="btn btn-secondary" @onclick="CerrarModal">Cancelar</button>
@@ -127,6 +150,9 @@
 
     private IBrowserFile? archivoSeleccionado;
 
+    private string? errorMensaje;
+    private bool intentoGuardar = false;
+
     protected override async Task OnInitializedAsync()
     {
         await CargarProductos();
@@ -142,8 +168,13 @@
     {
         modoEdicion = false;
         productoIdEditando = null;
+
         form = new ProductoFormModel();
         archivoSeleccionado = null;
+
+        intentoGuardar = false;
+        errorMensaje = null;    
+
         mostrarModal = true;
     }
 
@@ -161,6 +192,10 @@
         };
 
         archivoSeleccionado = null;
+
+        intentoGuardar = false;   
+        errorMensaje = null;      
+
         mostrarModal = true;
     }
 
@@ -174,6 +209,9 @@
     {
         mostrarModal = false;
         archivoSeleccionado = null;
+
+        intentoGuardar = false;  
+        errorMensaje = null;
     }
 
     private void SeleccionarArchivo(InputFileChangeEventArgs e)
@@ -183,8 +221,9 @@
 
     private async Task GuardarProducto()
     {
-        ValidarDatos();
-
+        intentoGuardar = true;
+        if (!ValidarDatos())
+            return;
         // 👉 Si se seleccionó archivo, lo guardamos
         if (archivoSeleccionado != null)
         {
@@ -232,21 +271,28 @@
         CerrarModal();
     }
 
-    private void ValidarDatos()
+    private bool ValidarDatos()
     {
+        errorMensaje = null;
+
         if (string.IsNullOrWhiteSpace(form.Nombre))
-            throw new Exception("El nombre es obligatorio.");
-        if (form.CategoriaId == 0)
-            throw new Exception("Debe seleccionar una categoría.");
+        {
+            return false;
+        }
+
         if (form.Precio <= 0)
-            throw new Exception("El precio debe ser mayor a cero.");
+        {
+            return false;
+        }
+
+        return true;
     }
 
 
     private class ProductoFormModel
     {
         public string Nombre { get; set; } = string.Empty;
-        public int CategoriaId { get; set; }
+        public int? CategoriaId { get; set; }
         public decimal Precio { get; set; }
         public string? ImagenUrl { get; set; }
     }

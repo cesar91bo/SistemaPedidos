@@ -12,7 +12,7 @@ namespace SistemaPedidos.Domain.Entities
         public string Nombre { get; set; } = string.Empty;
         public bool Activo { get; set; } = true;
 
-        public int CategoriaId { get; set; }
+        public int? CategoriaId { get; set; }
         public Categoria? Categoria { get; set; }
         public string? ImagenUrl { get; set; }
 
