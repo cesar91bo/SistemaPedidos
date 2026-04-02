@@ -10,14 +10,11 @@
 <h3>Gestión de Categorías</h3>
 
 <div class="mb-3">
-    <input class="form-control"
-           @bind="nuevoNombre"
-           placeholder="Nueva categoría" />
-
-    <button class="btn btn-primary mt-2"
-            @onclick="CrearCategoria">
-        Agregar
-    </button>
+    <div class="mb-3">
+        <button class="btn btn-primary" @onclick="AbrirCrear">
+            Nueva Categoría
+        </button>
+    </div>
 </div>
 
 <table class="table table-striped">
@@ -65,37 +62,43 @@
             <div class="modal-content">
 
                 <div class="modal-header">
-                    <h5 class="modal-title">Editar Categoría</h5>
+                    <h5 class="modal-title">
+                        @(modoEdicion ? "Editar Categoría" : "Nueva Categoría")
+                    </h5>
                     <button class="btn-close" @onclick="CerrarModal"></button>
                 </div>
 
                 <div class="modal-body">
+
                     <div class="mb-3">
                         <label>Nombre</label>
-                        <input class="form-control" @bind="nombreEditar" />
+                        <input class="form-control @(intentoGuardar && string.IsNullOrWhiteSpace(form.Nombre) ? "is-invalid" : "")"
+                               @bind="form.Nombre" />
+
+                        @if (intentoGuardar && string.IsNullOrWhiteSpace(form.Nombre))
+                        {
+                            <div class="invalid-feedback">
+                                El nombre es obligatorio.
+                            </div>
+                        }
                     </div>
 
                     <div class="mb-3">
                         <label>Imagen (opcional)</label>
                         <InputFile OnChange="SeleccionarArchivo" />
                     </div>
+
                 </div>
 
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CerrarModal">
-                        Cancelar
-                    </button>
-
-                    <button class="btn btn-primary" @onclick="GuardarCambios">
-                        Guardar
-                    </button>
+                    <button class="btn btn-secondary" @onclick="CerrarModal">Cancelar</button>
+                    <button class="btn btn-primary" @onclick="GuardarCategoria">Guardar</button>
                 </div>
 
             </div>
         </div>
     </div>
 }
-
 @code {
 
     private List<CategoriaDto> categorias = new();
@@ -107,15 +110,33 @@
     private string nombreEditar = string.Empty;
     private IBrowserFile? archivoSeleccionado;
 
+    private bool modoEdicion = false;
+    private bool intentoGuardar = false;
+
+    private CategoriaFormModel form = new();
+    private int? categoriaIdEditando = null;
 
     protected override async Task OnInitializedAsync()
     {
         await CargarCategorias();
     }
 
+    private void AbrirCrear()
+    {
+        modoEdicion = false;
+        categoriaIdEditando = null;
+
+        form = new CategoriaFormModel();
+        archivoSeleccionado = null;
+
+        intentoGuardar = false;
+
+        mostrarModal = true;
+    }
+
     private async Task CargarCategorias()
     {
-        categorias = await CategoriaService.ObtenerTodasAsync();
+        categorias = await CategoriaService.ObtenerSoloActivosAsync();
     }
 
     private async Task CrearCategoria()
@@ -142,8 +163,18 @@
 
     private void AbrirModal(CategoriaDto categoria)
     {
-        categoriaSeleccionada = categoria;
-        nombreEditar = categoria.Nombre;
+        modoEdicion = true;
+        categoriaIdEditando = categoria.Id;
+
+        form = new CategoriaFormModel
+        {
+            Nombre = categoria.Nombre,
+            ImagenUrl = categoria.ImagenUrl
+        };
+
+        archivoSeleccionado = null;
+        intentoGuardar = false;
+
         mostrarModal = true;
     }
 
@@ -159,14 +190,14 @@
         archivoSeleccionado = e.File;
     }
 
-    private async Task GuardarCambios()
+    private async Task GuardarCategoria()
     {
-        if (categoriaSeleccionada == null)
+        intentoGuardar = true;
+
+        if (string.IsNullOrWhiteSpace(form.Nombre))
             return;
 
-        string? rutaImagen = categoriaSeleccionada.ImagenUrl;
-
-        // Si el usuario seleccionó archivo nuevo
+        // Guardar imagen
         if (archivoSeleccionado != null)
         {
             var carpeta = Path.Combine(Environment.WebRootPath, "images", "categorias");
@@ -180,19 +211,35 @@
             using var stream = new FileStream(rutaCompleta, FileMode.Create);
             await archivoSeleccionado.OpenReadStream().CopyToAsync(stream);
 
-            rutaImagen = $"/images/categorias/{nombreArchivo}";
+            form.ImagenUrl = $"/images/categorias/{nombreArchivo}";
         }
 
-        await CategoriaService.ActualizarAsync(new ActualizarCategoriaDto
+        if (!modoEdicion)
         {
-            Id = categoriaSeleccionada.Id,
-            Nombre = nombreEditar,
-            ImagenUrl = rutaImagen
-        });
+            await CategoriaService.CrearAsync(new CrearCategoriaDto
+            {
+                Nombre = form.Nombre,
+                ImagenUrl = form.ImagenUrl
+            });
+        }
+        else
+        {
+            await CategoriaService.ActualizarAsync(new ActualizarCategoriaDto
+            {
+                Id = categoriaIdEditando!.Value,
+                Nombre = form.Nombre,
+                ImagenUrl = form.ImagenUrl
+            });
+        }
 
         await CargarCategorias();
-
         CerrarModal();
+    }
+
+    private class CategoriaFormModel
+    {
+        public string Nombre { get; set; } = string.Empty;
+        public string? ImagenUrl { get; set; }
     }
 
 }
