@@ -1,0 +1,175 @@
+﻿<style >
+.reports-page {
+    padding: 2rem;
+}
+
+.reports-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+    .reports-header h1 {
+        font-size: 3rem;
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .reports-header p {
+        margin: .5rem 0 0 0;
+        color: #6b7280;
+        font-size: 1rem;
+    }
+
+.btn-print {
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: .9rem 1.5rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.filters-card {
+    background: white;
+    border-radius: 24px;
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr auto;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,.05);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+    .filter-group label {
+        font-weight: 600;
+        margin-bottom: .5rem;
+    }
+
+.btn-search {
+    margin-top: auto;
+    height: 44px;
+    border: none;
+    border-radius: 12px;
+    background: #2563eb;
+    color: white;
+    padding: 0 1.2rem;
+    font-weight: 600;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 24px;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,.05);
+}
+
+.stat-title {
+    display: block;
+    color: #6b7280;
+    margin-bottom: .5rem;
+}
+
+.stat-card h2 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.stat-card small {
+    color: #6b7280;
+}
+
+.stat-icon {
+    width: 68px;
+    height: 68px;
+    border-radius: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+}
+
+.green {
+    background: #dcfce7;
+}
+
+.blue {
+    background: #dbeafe;
+}
+
+.yellow {
+    background: #fef3c7;
+}
+
+.purple {
+    background: #ede9fe;
+}
+
+.reports-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+}
+
+.report-card {
+    background: white;
+    border-radius: 24px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,.05);
+}
+
+    .report-card.large {
+        grid-row: span 2;
+    }
+
+.card-header {
+    margin-bottom: 1rem;
+}
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+
+.table-report {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .table-report th,
+    .table-report td {
+        padding: 1rem 0;
+        border-bottom: 1px solid #ececec;
+        text-align: left;
+    }
+
+.top-product {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 0;
+    border-bottom: 1px solid #ececec;
+}
+
+    .top-product:last-child {
+        border-bottom: none;
+    }
+
+</style >

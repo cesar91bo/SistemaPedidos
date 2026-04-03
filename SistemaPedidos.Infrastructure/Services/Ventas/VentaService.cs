@@ -57,5 +57,53 @@ namespace SistemaPedidos.Infrastructure.Services.Ventas
 
             await _context.SaveChangesAsync();
         }
+
+        public async Task<decimal> ObtenerTotalVentasDelDiaAsync()
+        {
+            var hoy = DateTime.Today;
+            var mañana = hoy.AddDays(1);
+
+            return await _context.Ventas
+                .Where(v => v.FechaVenta >= hoy && v.FechaVenta < mañana)
+                .SumAsync(v => (decimal?)v.TotalGeneral) ?? 0;
+        }
+
+        public async Task<decimal> ObtenerTotalVentasDeAyerAsync()
+        {
+            var ayer = DateTime.Today.AddDays(-1);
+            var hoy = DateTime.Today;
+
+            return await _context.Ventas
+                .Where(v => v.FechaVenta >= ayer && v.FechaVenta < hoy)
+                .SumAsync(v => (decimal?)v.TotalGeneral) ?? 0;
+        }
+
+        public async Task<int> ObtenerCantidadVentasDelDiaAsync()
+        {
+            var hoy = DateTime.Today;
+            var mañana = hoy.AddDays(1);
+
+            return await _context.Ventas
+                .CountAsync(v => v.FechaVenta >= hoy && v.FechaVenta < mañana);
+        }
+
+        public async Task<List<ProductoMasVendidoDto>> ObtenerProductosMasVendidosAsync(int cantidad = 4)
+        {
+            var hoy = DateTime.Today;
+            var mañana = hoy.AddDays(1);
+
+            return await _context.Ventas
+                .Where(v => v.FechaVenta >= hoy && v.FechaVenta < mañana)
+                .SelectMany(v => v.Pedido!.Items)
+                .GroupBy(i => i.Producto!.Nombre)
+                .Select(g => new ProductoMasVendidoDto
+                {
+                    Nombre = g.Key,
+                    CantidadVendida = g.Sum(x => x.Cantidad)
+                })
+                .OrderByDescending(x => x.CantidadVendida)
+                .Take(cantidad)
+                .ToListAsync();
+        }
     }
 }

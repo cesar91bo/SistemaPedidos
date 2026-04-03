@@ -1,0 +1,178 @@
+﻿@page "/informes"
+@using SistemaPedidos.Application.Features.Ventas
+@using SistemaPedidos.Application.Features.Ventas.DTOs
+@inject IVentaService VentaService
+
+<div class="reports-page">
+
+    <div class="reports-header">
+        <div>
+            <h1>Informes</h1>
+            <p>Consultá ventas y pedidos por período</p>
+        </div>
+
+        <button class="btn-print">
+            🖨️ Imprimir
+        </button>
+    </div>
+
+    <div class="filters-card">
+        <div class="filter-group">
+            <label>Período</label>
+            <select class="form-select">
+                <option>Hoy</option>
+                <option>Esta semana</option>
+                <option>Este mes</option>
+                <option>Personalizado</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>Desde</label>
+            <input type="date" class="form-control" />
+        </div>
+
+        <div class="filter-group">
+            <label>Hasta</label>
+            <input type="date" class="form-control" />
+        </div>
+
+        <div class="filter-group">
+            <label>&nbsp;</label>
+            <button class="btn-search">
+                Buscar
+            </button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+
+        <div class="stat-card">
+            <div>
+                <span class="stat-title">Ventas Totales</span>
+                <h2>$245.300</h2>
+                <small>18 ventas realizadas</small>
+            </div>
+            <div class="stat-icon green">💰</div>
+        </div>
+
+        <div class="stat-card">
+            <div>
+                <span class="stat-title">Pedidos Delivery</span>
+                <h2>11</h2>
+                <small>61% del total</small>
+            </div>
+            <div class="stat-icon blue">🛵</div>
+        </div>
+
+        <div class="stat-card">
+            <div>
+                <span class="stat-title">Pedidos Retiro</span>
+                <h2>7</h2>
+                <small>39% del total</small>
+            </div>
+            <div class="stat-icon yellow">🛍️</div>
+        </div>
+
+        <div class="stat-card">
+            <div>
+                <span class="stat-title">Promedio por Venta</span>
+                <h2>$13.628</h2>
+                <small>Por pedido cobrado</small>
+            </div>
+            <div class="stat-icon purple">📈</div>
+        </div>
+
+    </div>
+
+    <div class="reports-content">
+
+        <div class="report-card large">
+            <div class="card-header">
+                <h3>Ventas por forma de pago</h3>
+            </div>
+
+            <table class="table-report">
+                <thead>
+                    <tr>
+                        <th>Forma de Pago</th>
+                        <th>Cantidad</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>💵 Efectivo</td>
+                        <td>9</td>
+                        <td>$98.000</td>
+                    </tr>
+                    <tr>
+                        <td>💳 Transferencia</td>
+                        <td>5</td>
+                        <td>$82.500</td>
+                    </tr>
+                    <tr>
+                        <td>🏦 Débito</td>
+                        <td>3</td>
+                        <td>$41.000</td>
+                    </tr>
+                    <tr>
+                        <td>💳 Crédito</td>
+                        <td>1</td>
+                        <td>$23.800</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="report-card">
+            <div class="card-header">
+                <h3>Productos más vendidos</h3>
+            </div>
+
+            <div class="top-product">
+                <span>🍔 Hamburguesa Completa</span>
+                <strong>38</strong>
+            </div>
+
+            <div class="top-product">
+                <span>🍕 Pizza Muzarella</span>
+                <strong>31</strong>
+            </div>
+
+            <div class="top-product">
+                <span>🥤 Gaseosa</span>
+                <strong>25</strong>
+            </div>
+
+            <div class="top-product">
+                <span>🍟 Papas fritas</span>
+                <strong>19</strong>
+            </div>
+        </div>
+
+        <div class="report-card">
+            <div class="card-header">
+                <h3>Deliveries</h3>
+            </div>
+
+            <div class="top-product">
+                <span>🛵 Juan</span>
+                <strong>8 envíos</strong>
+            </div>
+
+            <div class="top-product">
+                <span>🛵 Lucas</span>
+                <strong>6 envíos</strong>
+            </div>
+
+            <div class="top-product">
+                <span>🛵 Martín</span>
+                <strong>4 envíos</strong>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+

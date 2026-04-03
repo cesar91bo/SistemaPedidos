@@ -1,4 +1,12 @@
 ﻿@page "/"
+@using SistemaPedidos.Application.Features.Pedidos.DTOs
+@using SistemaPedidos.Application.Features.Pedidos.Interfaces
+@using SistemaPedidos.Application.Features.Ventas
+@using SistemaPedidos.Application.Features.Ventas.DTOs
+@using SistemaPedidos.Infrastructure.Services.Pedidos
+
+@inject IVentaService VentaService
+@inject IPedidoService PedidoService
 
 <PageTitle>Dashboard</PageTitle>
 
@@ -7,8 +15,15 @@
     <div class="stats-card sales">
         <div>
             <span class="card-label">Ventas del día</span>
-            <h2>$245.300</h2>
-            <small>+12% respecto a ayer</small>
+            <h2>@ventasDelDia.ToString("C0")</h2>
+            @if (porcentajeVsAyer.HasValue)
+            {
+                <small>
+                    @(porcentajeVsAyer >= 0 ? "+" : "")
+                    @porcentajeVsAyer.Value.ToString("0")
+                    % respecto a ayer
+                </small>
+            }
         </div>
         <div class="card-icon">💰</div>
     </div>
@@ -16,28 +31,47 @@
     <div class="stats-card orders">
         <div>
             <span class="card-label">Pedidos activos</span>
-            <h2>12</h2>
-            <small>4 en cocina · 3 delivery</small>
+            <h2>@(pedidosEnPreparacion + pedidosListos + pedidosEnCamino)</h2>
+
+            <small>
+                @pedidosEnPreparacion en preparación ·
+                @pedidosListos listos ·
+                @pedidosEnCamino enviados
+            </small>
         </div>
-        <div class="card-icon">🛵</div>
+
+        <div class="card-icon">
+            @if (pedidosEnCamino > 0)
+            {
+                <span>🛵</span>
+            }
+            else if (pedidosListos > 0)
+            {
+                <span>📦</span>
+            }
+            else
+            {
+                <span>👨‍🍳</span>
+            }
+        </div>
     </div>
 
     <div class="stats-card pending">
         <div>
-            <span class="card-label">Pendientes</span>
-            <h2>5</h2>
-            <small>Esperando confirmación</small>
+            <span class="card-label">Ventas realizadas</span>
+            <h2>@cantidadVentasHoy</h2>
+            <small>Pedidos cobrados hoy</small>
         </div>
-        <div class="card-icon">⏳</div>
+        <div class="card-icon">🧾</div>
     </div>
 
     <div class="stats-card average">
         <div>
-            <span class="card-label">Ticket promedio</span>
-            <h2>$18.900</h2>
-            <small>Por pedido</small>
+            <span class="card-label">Por cobrar</span>
+            <h2>@montoPendienteCobro.ToString("C0")</h2>
+            <small>@cantidadPendientesCobro pedidos pendientes de cobro</small>
         </div>
-        <div class="card-icon">📈</div>
+        <div class="card-icon">💵</div>
     </div>
 
 </div>
@@ -60,24 +94,30 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>#1024</td>
-                    <td>Juan Pérez</td>
-                    <td><span class="status preparing">En preparación</span></td>
-                    <td>$14.500</td>
-                </tr>
-                <tr>
-                    <td>#1025</td>
-                    <td>María López</td>
-                    <td><span class="status delivered">Entregado</span></td>
-                    <td>$22.300</td>
-                </tr>
-                <tr>
-                    <td>#1026</td>
-                    <td>Carlos Gómez</td>
-                    <td><span class="status pending-status">Pendiente</span></td>
-                    <td>$8.900</td>
-                </tr>
+                @if (ultimosPedidos.Any())
+                {
+                    @foreach (var pedido in ultimosPedidos)
+                    {
+                        <tr>
+                            <td>#@pedido.Id</td>
+                            <td>@pedido.NombreCliente</td>
+                            <td>
+                                <span class="status @ObtenerClaseEstado(pedido.Estado)">
+                                    @pedido.EstadoNombre
+                                </span>
+                            </td>
+                            <td>@pedido.TotalGeneral.ToString("C0")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="4" style="text-align:center; color:#6b7280; padding:30px;">
+                            No hay pedidos activos
+                        </td>
+                    </tr>
+                }
             </tbody>
         </table>
     </div>
@@ -85,28 +125,82 @@
     <div class="panel">
         <h3>Productos más vendidos</h3>
 
-        <div class="product-item">
-            <span>🍔 Hamburguesa Completa</span>
-            <strong>38</strong>
-        </div>
-
-        <div class="product-item">
-            <span>🍕 Pizza Muzzarella</span>
-            <strong>31</strong>
-        </div>
-
-        <div class="product-item">
-            <span>🥤 Gaseosa</span>
-            <strong>25</strong>
-        </div>
-
-        <div class="product-item">
-            <span>🍟 Papas fritas</span>
-            <strong>19</strong>
-        </div>
+        @if (productosMasVendidos.Any())
+        {
+            @foreach (var producto in productosMasVendidos)
+            {
+                <div class="product-item">
+                    <span>@producto.Nombre</span>
+                    <strong>@producto.CantidadVendida</strong>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="product-item">
+                <span>No hay ventas hoy</span>
+            </div>
+        }
     </div>
 
 </div>
+
+@code {
+    private decimal ventasDelDia = 0;
+    private decimal ventasAyer = 0;
+    private decimal? porcentajeVsAyer = null;
+    private int pedidosEnPreparacion;
+    private int pedidosListos;
+    private int pedidosEnCamino;
+    private int cantidadVentasHoy;
+    private decimal montoPendienteCobro;
+    private int cantidadPendientesCobro;
+    private List<PedidoDto> ultimosPedidos = new();
+    private List<ProductoMasVendidoDto> productosMasVendidos = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        ventasDelDia = await VentaService.ObtenerTotalVentasDelDiaAsync();
+        ventasAyer = await VentaService.ObtenerTotalVentasDeAyerAsync();
+        productosMasVendidos = await VentaService.ObtenerProductosMasVendidosAsync();
+
+        if (ventasAyer > 0)
+        {
+            porcentajeVsAyer = ((ventasDelDia - ventasAyer) / ventasAyer) * 100;
+        }
+
+        var pedidosActivos = await PedidoService.ObtenerActivosAsync();
+
+        ultimosPedidos = pedidosActivos
+            .OrderByDescending(x => x.Fecha)
+            .Take(5)
+            .ToList();
+
+        pedidosEnPreparacion = pedidosActivos.Count(x => x.Estado == 1);
+        pedidosListos = pedidosActivos.Count(x => x.Estado == 2);
+        pedidosEnCamino = pedidosActivos.Count(x => x.Estado == 3);
+
+        cantidadVentasHoy = await VentaService.ObtenerCantidadVentasDelDiaAsync();
+
+        var pedidosPendientesCobro = pedidosActivos
+            .Where(x => x.Estado == 2 || x.Estado == 3)
+            .ToList();
+
+        cantidadPendientesCobro = pedidosPendientesCobro.Count;
+        montoPendienteCobro = pedidosPendientesCobro.Sum(x => x.TotalGeneral);
+    }
+
+    private string ObtenerClaseEstado(int estado)
+    {
+        return estado switch
+        {
+            1 => "preparing",
+            2 => "ready",
+            3 => "on-the-way",
+            _ => ""
+        };
+    }
+}
 
 <style>
     .dashboard-grid {
@@ -213,14 +307,14 @@
         color: #92400e;
     }
 
-    .delivered {
-        background: #dcfce7;
-        color: #166534;
+    .ready {
+        background: #dbeafe;
+        color: #1d4ed8;
     }
 
-    .pending-status {
-        background: #fee2e2;
-        color: #991b1b;
+    .on-the-way {
+        background: #ede9fe;
+        color: #6d28d9;
     }
 
     .product-item {
