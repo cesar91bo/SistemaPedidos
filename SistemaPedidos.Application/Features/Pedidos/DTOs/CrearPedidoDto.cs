@@ -8,6 +8,7 @@ public class CrearPedidoDto
 
     public int TipoPedido { get; set; }
     public decimal PrecioEnvio { get; set; }
+    public int? DeliveryId { get; set; }
 
     public List<CrearPedidoItemDto> Items { get; set; } = new();
 }

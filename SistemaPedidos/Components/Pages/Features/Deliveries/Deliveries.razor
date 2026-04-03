@@ -1,0 +1,204 @@
+﻿@page "/deliveries"
+@rendermode InteractiveServer
+
+@using SistemaPedidos.Application.Features.Deliveries.DTOs
+@using SistemaPedidos.Application.Features.Deliveries.Interfaces
+
+@inject IDeliveryService DeliveryService
+
+<h3>Gestión de Delivery</h3>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="AbrirCrear">
+        Nuevo Delivery
+    </button>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Nombre</th>
+            <th>Teléfono</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var delivery in deliveries)
+        {
+            <tr>
+                <td>@delivery.Id</td>
+                <td>@delivery.Nombre</td>
+                <td>@delivery.Telefono</td>
+                <td>
+                    <button class="btn btn-warning btn-sm me-2"
+                            @onclick="() => AbrirModal(delivery)">
+                        Editar
+                    </button>
+
+                    <button class="btn btn-danger btn-sm"
+                            @onclick="() => Desactivar(delivery.Id)">
+                        Desactivar
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (mostrarModal)
+{
+    <div class="modal fade show d-block"
+         tabindex="-1"
+         style="background-color: rgba(0,0,0,0.5);">
+
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        @(modoEdicion ? "Editar Delivery" : "Nuevo Delivery")
+                    </h5>
+
+                    <button class="btn-close" @onclick="CerrarModal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label>Nombre</label>
+
+                        <input class="form-control @(intentoGuardar && string.IsNullOrWhiteSpace(form.Nombre) ? "is-invalid" : "")"
+                               @bind="form.Nombre" />
+
+                        @if (intentoGuardar && string.IsNullOrWhiteSpace(form.Nombre))
+                        {
+                            <div class="invalid-feedback">
+                                El nombre es obligatorio.
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Teléfono</label>
+
+                        <input class="form-control"
+                               @bind="form.Telefono" />
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary"
+                            @onclick="CerrarModal">
+                        Cancelar
+                    </button>
+
+                    <button class="btn btn-primary"
+                            @onclick="GuardarDelivery">
+                        Guardar
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+
+    private List<DeliveryDto> deliveries = new();
+
+    private bool mostrarModal = false;
+    private bool modoEdicion = false;
+    private bool intentoGuardar = false;
+
+    private int? deliveryIdEditando = null;
+
+    private DeliveryFormModel form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDeliveries();
+    }
+
+    private async Task CargarDeliveries()
+    {
+        deliveries = await DeliveryService.ObtenerSoloActivosAsync();
+    }
+
+    private void AbrirCrear()
+    {
+        modoEdicion = false;
+        deliveryIdEditando = null;
+
+        form = new DeliveryFormModel();
+
+        intentoGuardar = false;
+        mostrarModal = true;
+    }
+
+    private void AbrirModal(DeliveryDto delivery)
+    {
+        modoEdicion = true;
+        deliveryIdEditando = delivery.Id;
+
+        form = new DeliveryFormModel
+        {
+            Nombre = delivery.Nombre,
+            Telefono = delivery.Telefono
+        };
+
+        intentoGuardar = false;
+        mostrarModal = true;
+    }
+
+    private void CerrarModal()
+    {
+        mostrarModal = false;
+        intentoGuardar = false;
+        deliveryIdEditando = null;
+        form = new DeliveryFormModel();
+    }
+
+    private async Task GuardarDelivery()
+    {
+        intentoGuardar = true;
+
+        if (string.IsNullOrWhiteSpace(form.Nombre))
+            return;
+
+        if (!modoEdicion)
+        {
+            await DeliveryService.CrearAsync(new CrearDeliveryDto
+            {
+                Nombre = form.Nombre,
+                Telefono = form.Telefono
+            });
+        }
+        else
+        {
+            await DeliveryService.ActualizarAsync(new ActualizarDeliveryDto
+            {
+                Id = deliveryIdEditando!.Value,
+                Nombre = form.Nombre,
+                Telefono = form.Telefono
+            });
+        }
+
+        await CargarDeliveries();
+        CerrarModal();
+    }
+
+    private async Task Desactivar(int id)
+    {
+        await DeliveryService.DesactivarAsync(id);
+        await CargarDeliveries();
+    }
+
+    private class DeliveryFormModel
+    {
+        public string Nombre { get; set; } = string.Empty;
+        public string? Telefono { get; set; }
+    }
+}

@@ -21,6 +21,7 @@ public class PedidoService : IPedidoService
         return await _context.Pedidos
             .Include(p => p.Items)
                 .ThenInclude(i => i.Producto)
+            .Include(p => p.Delivery)
             .Where(p => p.Estado != EstadoPedido.Terminado &&
                         p.Estado != EstadoPedido.Cancelado)
             .OrderByDescending(p => p.Fecha)
@@ -34,10 +35,18 @@ public class PedidoService : IPedidoService
                 TipoPedido = (int)p.TipoPedido,
                 TipoPedidoNombre = p.TipoPedido.ToString(),
                 Estado = (int)p.Estado,
-                EstadoNombre = p.Estado.ToString(),
+                EstadoNombre =
+                    p.Estado == EstadoPedido.EnPreparacion ? "En preparación" :
+                    p.Estado == EstadoPedido.Listo ? "Listo" :
+                    p.Estado == EstadoPedido.EnCamino ? "En camino" :
+                    p.Estado == EstadoPedido.Terminado ? "Terminado" :
+                    p.Estado == EstadoPedido.Cancelado ? "Cancelado" :
+                    p.Estado.ToString(),
                 TotalProductos = p.TotalProductos,
                 PrecioEnvio = p.PrecioEnvio,
                 TotalGeneral = p.TotalGeneral,
+                DeliveryId = p.DeliveryId,
+                DeliveryNombre = p.Delivery != null ? p.Delivery.Nombre : null,
                 Items = p.Items.Select(i => new PedidoItemDto
                 {
                     ProductoId = i.ProductoId,
@@ -55,6 +64,7 @@ public class PedidoService : IPedidoService
         return await _context.Pedidos
             .Include(p => p.Items)
                 .ThenInclude(i => i.Producto)
+            .Include(p => p.Delivery)
             .Where(p => p.Id == id)
             .Select(p => new PedidoDto
             {
@@ -66,10 +76,18 @@ public class PedidoService : IPedidoService
                 TipoPedido = (int)p.TipoPedido,
                 TipoPedidoNombre = p.TipoPedido.ToString(),
                 Estado = (int)p.Estado,
-                EstadoNombre = p.Estado.ToString(),
+                EstadoNombre =
+                    p.Estado == EstadoPedido.EnPreparacion ? "En preparación" :
+                    p.Estado == EstadoPedido.Listo ? "Listo" :
+                    p.Estado == EstadoPedido.EnCamino ? "En camino" :
+                    p.Estado == EstadoPedido.Terminado ? "Terminado" :
+                    p.Estado == EstadoPedido.Cancelado ? "Cancelado" :
+                    p.Estado.ToString(),
                 TotalProductos = p.TotalProductos,
                 PrecioEnvio = p.PrecioEnvio,
                 TotalGeneral = p.TotalGeneral,
+                DeliveryId = p.DeliveryId,
+                DeliveryNombre = p.Delivery != null ? p.Delivery.Nombre : null,
                 Items = p.Items.Select(i => new PedidoItemDto
                 {
                     ProductoId = i.ProductoId,
@@ -91,8 +109,9 @@ public class PedidoService : IPedidoService
             Telefono = dto.Telefono,
             Direccion = dto.Direccion,
             TipoPedido = (TipoPedido)dto.TipoPedido,
-            Estado = EstadoPedido.EnProceso,
-            PrecioEnvio = dto.PrecioEnvio
+            Estado = EstadoPedido.EnPreparacion,
+            PrecioEnvio = dto.PrecioEnvio,
+            DeliveryId = dto.DeliveryId
         };
 
         _context.Pedidos.Add(pedido);

@@ -10,7 +10,7 @@ public class Pedido
 
     public TipoPedido TipoPedido { get; set; }
 
-    public EstadoPedido Estado { get; set; } = EstadoPedido.EnProceso;
+    public EstadoPedido Estado { get; set; } = EstadoPedido.EnPreparacion;
 
     // Datos del cliente
     public string NombreCliente { get; set; } = string.Empty;
@@ -27,4 +27,7 @@ public class Pedido
     public decimal TotalGeneral { get; set; }
 
     public List<PedidoItem> Items { get; set; } = new();
+
+    public int? DeliveryId { get; set; }
+    public Delivery? Delivery { get; set; }
 }

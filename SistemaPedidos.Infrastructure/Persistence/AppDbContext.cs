@@ -17,6 +17,8 @@ public class AppDbContext : DbContext
     public DbSet<PedidoItem> PedidoItems => Set<PedidoItem>();
     public DbSet<Venta> Ventas => Set<Venta>();
     public DbSet<Pago> Pagos => Set<Pago>();
+    public DbSet<Parametro> Parametros { get; set; }
+    public DbSet<Delivery> Deliveries { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -65,6 +67,12 @@ public class AppDbContext : DbContext
             .Property(p => p.TotalGeneral)
             .HasPrecision(18, 2);
 
+        modelBuilder.Entity<Pedido>()
+            .HasOne(x => x.Delivery)
+            .WithMany()
+            .HasForeignKey(x => x.DeliveryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
 
         modelBuilder.Entity<PedidoItem>()
             .Property(p => p.PrecioUnitario)
@@ -82,5 +90,48 @@ public class AppDbContext : DbContext
             .Property(p => p.Monto)
             .HasPrecision(18, 2);
 
+        modelBuilder.Entity<Parametro>(entity =>
+        {
+            entity.ToTable("Parametros");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Codigo)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(x => x.Valor)
+                .IsRequired()
+                .HasMaxLength(1000);
+
+            entity.Property(x => x.Grupo)
+                .HasMaxLength(100);
+
+            entity.Property(x => x.Descripcion)
+                .HasMaxLength(250);
+
+            entity.Property(x => x.Activo)
+                .HasDefaultValue(true);
+
+            entity.HasIndex(x => x.Codigo)
+                .IsUnique();
+        });
+
+        modelBuilder.Entity<Delivery>(entity =>
+        {
+            entity.ToTable("Deliveries");
+
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Nombre)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(x => x.Telefono)
+                .HasMaxLength(30);
+
+            entity.Property(x => x.Activo)
+                .HasDefaultValue(true);
+        });
     }
 }

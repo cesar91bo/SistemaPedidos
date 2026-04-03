@@ -19,6 +19,9 @@ public class PedidoDto
     public decimal TotalProductos { get; set; }
     public decimal PrecioEnvio { get; set; }
     public decimal TotalGeneral { get; set; }
+    public int? DeliveryId { get; set; }
+    public string? DeliveryNombre { get; set; }
+
 
     public List<PedidoItemDto> Items { get; set; } = new();
 }
