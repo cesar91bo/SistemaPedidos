@@ -1,0 +1,330 @@
+﻿@page "/caja"
+@rendermode InteractiveServer
+@using SistemaPedidos.Application.Features.Caja.DTOs
+@using SistemaPedidos.Application.Features.Caja.Interfaces
+@using SistemaPedidos.Domain.Enums
+
+@inject ICajaService CajaService
+@inject IJSRuntime JS
+
+@if (caja == null)
+{
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="alert alert-danger mb-3">
+            @error
+        </div>
+    }
+    <div class="cash-open-card">
+        <h2>Abrir caja</h2>
+        <p>Ingresá el fondo inicial para comenzar a operar.</p>
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-danger mb-3">
+                @error
+            </div>
+        }
+
+        <div class="mb-3">
+            <label class="form-label">Fondo inicial</label>
+
+            <InputNumber class="form-control form-control-lg"
+                         @bind-Value="apertura.FondoInicial" />
+        </div>
+
+        <button class="btn btn-success btn-lg" @onclick="AbrirCaja">
+            Abrir caja
+        </button>
+    </div>
+}
+else
+{
+    <div class="cash-page">
+
+        <div class="cash-header">
+            <div>
+                <h1>Caja</h1>
+                <p>@caja.FechaApertura.ToString("dddd dd 'de' MMMM")</p>
+            </div>
+
+            <div class="cash-actions">
+                <button class="btn btn-warning" @onclick="() => mostrarModalRetiro = true">
+                    Retirar dinero
+                </button>
+
+                <button class="btn btn-danger" @onclick="CerrarCaja">
+                    Cerrar caja
+                </button>
+            </div>
+        </div>
+
+        <div class="cash-cards">
+
+            <div class="cash-card">
+                <div class="cash-icon green">💵</div>
+                <div>
+                    <span>Fondo inicial</span>
+                    <h2>$@FormatearMonto(caja.FondoInicial)</h2>
+                </div>
+            </div>
+
+            <div class="cash-card">
+                <div class="cash-icon blue">💰</div>
+                <div>
+                    <span>Ingresos del día</span>
+                    <h2>$@FormatearMonto(caja.TotalIngresos)</h2>
+                </div>
+            </div>
+
+            <div class="cash-card">
+                <div class="cash-icon red">💸</div>
+                <div>
+                    <span>Retiros</span>
+                    <h2>$@FormatearMonto(caja.TotalRetiros)</h2>
+                </div>
+            </div>
+
+            <div class="cash-card">
+                <div class="cash-icon purple">🏦</div>
+                <div>
+                    <span>Disponible en caja</span>
+                    <h2>$@FormatearMonto(caja.Disponible)</h2>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="cash-layout">
+
+            <div class="cash-table-card">
+                <div class="card-header-custom">
+                    <h3>Movimientos</h3>
+                </div>
+
+                <table class="table cash-table">
+                    <thead>
+                        <tr>
+                            <th>Hora</th>
+                            <th>Detalle</th>
+                            <th>Tipo</th>
+                            <th class="text-end">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var movimiento in caja.Movimientos.OrderByDescending(x => x.Fecha))
+                        {
+                            <tr>
+                                <td>@movimiento.Fecha.ToString("HH:mm")</td>
+                                <td>@movimiento.Descripcion</td>
+
+                                <td>
+                                    @if (movimiento.Tipo == TipoMovimientoCaja.Retiro)
+                                    {
+                                        <span class="badge bg-danger">Retiro</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">Ingreso</span>
+                                    }
+                                </td>
+
+                                <td class="text-end @(movimiento.Tipo == TipoMovimientoCaja.Retiro ? "text-danger" : "text-success")">
+                                    @(movimiento.Tipo == TipoMovimientoCaja.Retiro ? "-" : "+")$@FormatearMonto(movimiento.Monto)
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="cash-side-card">
+                <h3>Estado de caja</h3>
+
+                <div class="status-row">
+                    <span>Apertura</span>
+                    <strong>@caja.FechaApertura.ToString("HH:mm") hs</strong>
+                </div>
+
+                <div class="status-row">
+                    <span>Pedidos cobrados</span>
+                    <strong>@CantidadPedidos()</strong>
+                </div>
+
+                <div class="status-row">
+                    <span>Pagos en efectivo</span>
+                    <strong>$@FormatearMonto(caja.TotalIngresos)</strong>
+                </div>
+
+                <div class="status-row">
+                    <span>Retiros realizados</span>
+                    <strong>$@FormatearMonto(caja.TotalRetiros)</strong>
+                </div>
+
+                <hr />
+
+                <div class="status-total">
+                    <span>Total en caja</span>
+                    <h2>$@FormatearMonto(caja.Disponible)</h2>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+}
+
+@if (mostrarModalRetiro)
+{
+    <div class="cash-modal-backdrop">
+        <div class="cash-modal">
+
+            <div class="cash-modal-header">
+                <h3>Retirar dinero</h3>
+                <button class="btn-close" @onclick="CerrarModalRetiro"></button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(error))
+            {
+                <div class="alert alert-danger">
+                    @error
+                </div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label">Monto</label>
+                <InputNumber class="form-control"
+                             @bind-Value="retiro.Monto" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Motivo</label>
+                <InputText class="form-control"
+                           @bind-Value="retiro.Descripcion" />
+            </div>
+
+            <div class="cash-modal-actions">
+                <button class="btn btn-secondary" @onclick="CerrarModalRetiro">
+                    Cancelar
+                </button>
+
+                <button class="btn btn-warning" @onclick="GuardarRetiro">
+                    Confirmar retiro
+                </button>
+            </div>
+
+        </div>
+    </div>
+}
+
+@code {
+    private CajaDto? caja;
+    private AbrirCajaDto apertura = new();
+    private string? error;
+
+    private bool mostrarModalRetiro;
+    private RetiroCajaDto retiro = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        caja = await CajaService.ObtenerCajaAbiertaAsync();
+    }
+
+    private string FormatearMonto(decimal monto)
+    {
+        return monto.ToString("N0");
+    }
+
+    private int CantidadPedidos()
+    {
+        if (caja == null)
+            return 0;
+
+        return caja.Movimientos
+            .Count(x => x.Tipo == TipoMovimientoCaja.Ingreso);
+    }
+
+    private async Task AbrirCaja()
+    {
+        error = null;
+
+        try
+        {
+            await CajaService.AbrirAsync(apertura);
+
+            caja = await CajaService.ObtenerCajaAbiertaAsync();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task CerrarCaja()
+    {
+        var confirmar = await JS.InvokeAsync<bool>(
+            "confirm",
+            "¿Seguro que querés cerrar la caja?"
+        );
+
+        if (!confirmar)
+            return;
+
+        try
+        {
+            await CajaService.CerrarAsync();
+
+            caja = await CajaService.ObtenerCajaAbiertaAsync();
+            apertura = new AbrirCajaDto();
+            error = null;
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private void CerrarModalRetiro()
+    {
+        mostrarModalRetiro = false;
+        retiro = new RetiroCajaDto();
+        error = null;
+    }
+
+    private async Task GuardarRetiro()
+    {
+        try
+        {
+            error = null;
+
+            if (retiro.Monto <= 0)
+            {
+                error = "Ingresá un monto válido.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(retiro.Descripcion))
+            {
+                error = "Ingresá un motivo.";
+                return;
+            }
+
+            await CajaService.RegistrarRetiroAsync(retiro);
+
+            caja = await CajaService.ObtenerCajaAbiertaAsync();
+
+            CerrarModalRetiro();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+}
+

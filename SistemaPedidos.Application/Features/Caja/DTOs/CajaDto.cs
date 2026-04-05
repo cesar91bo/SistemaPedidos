@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SistemaPedidos.Domain.Entities
+namespace SistemaPedidos.Application.Features.Caja.DTOs
 {
-    public class Caja
+    public class CajaDto
     {
         public int Id { get; set; }
 
@@ -15,12 +15,12 @@ namespace SistemaPedidos.Domain.Entities
         public DateTime? FechaCierre { get; set; }
 
         public decimal FondoInicial { get; set; }
-        public decimal TotalEfectivo { get; set; }
+        public decimal TotalIngresos { get; set; }
         public decimal TotalRetiros { get; set; }
-        public decimal TotalFinal { get; set; }
+        public decimal Disponible { get; set; }
 
-        public EstadoCaja Estado { get; set; } // Abierta / Cerrada
+        public EstadoCaja Estado { get; set; }
 
-        public ICollection<MovimientoCaja> Movimientos { get; set; } = new List<MovimientoCaja>();
+        public List<MovimientoCajaDto> Movimientos { get; set; } = new();
     }
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SistemaPedidos.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using SistemaPedidos.Infrastructure.Persistence;
 namespace SistemaPedidos.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260405100034_AgregarCaja")]
+    partial class AgregarCaja
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -142,8 +145,6 @@ namespace SistemaPedidos.Infrastructure.Migrations
 
                     b.HasIndex("CajaId");
 
-                    b.HasIndex("PedidoId");
-
                     b.ToTable("MovimientosCaja");
                 });
 
@@ -231,9 +232,6 @@ namespace SistemaPedidos.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("Activo")
-                        .HasColumnType("bit");
-
                     b.Property<int?>("DeliveryId")
                         .HasColumnType("int");
 
@@ -244,9 +242,6 @@ namespace SistemaPedidos.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("Fecha")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("FechaBaja")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("NombreCliente")
@@ -423,14 +418,7 @@ namespace SistemaPedidos.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SistemaPedidos.Domain.Entities.Pedido", "Pedido")
-                        .WithMany()
-                        .HasForeignKey("PedidoId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.Navigation("Caja");
-
-                    b.Navigation("Pedido");
                 });
 
             modelBuilder.Entity("SistemaPedidos.Domain.Entities.Pago", b =>

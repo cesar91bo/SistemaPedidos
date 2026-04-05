@@ -27,7 +27,7 @@ namespace SistemaPedidos.Infrastructure.Services.Informes
                 .Where(v => v.FechaVenta >= fechaDesde &&
                 v.FechaVenta < fechaHasta).ToListAsync();
 
-            var totalVentas = ventas.Sum(v => v.TotalGeneral);
+            var totalVentas = ventas.Sum(v => v.TotalGeneral - v.TotalEnvio);
             var cantidadVentas = ventas.Count;
 
             var pedidosDelivery = ventas.Count(v =>
@@ -43,13 +43,31 @@ namespace SistemaPedidos.Infrastructure.Services.Informes
                 : 0;
 
             var formasPago = ventas
-                .SelectMany(v => v.Pagos)
-                .GroupBy(p => p.FormaPago)
+                .SelectMany(v => v.Pagos.Select(p => new
+                {
+                    Pago = p,
+                    Venta = v
+                }))
+                .GroupBy(x => x.Pago.FormaPago)
                 .Select(g => new FormaPagoInformeDto
                 {
                     Nombre = ObtenerNombreFormaPago(g.Key),
                     Cantidad = g.Count(),
-                    Total = g.Sum(x => x.Monto)
+                    Total = g.Sum(x =>
+                    {
+                        var monto = x.Pago.Monto;
+
+                        if (x.Pago.FormaPago == FormaPago.Efectivo &&
+                            x.Venta.Pedido?.TipoPedido == TipoPedido.Delivery)
+                        {
+                            monto -= x.Venta.TotalEnvio;
+
+                            if (monto < 0)
+                                monto = 0;
+                        }
+
+                        return monto;
+                    })
                 })
                 .OrderByDescending(x => x.Total)
                 .ToList();

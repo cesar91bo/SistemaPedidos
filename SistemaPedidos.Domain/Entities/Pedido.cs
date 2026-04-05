@@ -30,4 +30,7 @@ public class Pedido
 
     public int? DeliveryId { get; set; }
     public Delivery? Delivery { get; set; }
+
+    public bool Activo { get; set; } = true;
+    public DateTime? FechaBaja { get; set; }
 }

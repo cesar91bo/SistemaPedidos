@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SistemaPedidos.Application.Features.Caja.Interfaces;
 using SistemaPedidos.Application.Features.Ventas;
 using SistemaPedidos.Application.Features.Ventas.DTOs;
 using SistemaPedidos.Domain.Entities;
@@ -15,10 +16,12 @@ namespace SistemaPedidos.Infrastructure.Services.Ventas
     public class VentaService : IVentaService
     {
         private readonly AppDbContext _context;
+        private readonly ICajaService _cajaService;
 
-        public VentaService(AppDbContext context)
+        public VentaService(AppDbContext context, ICajaService cajaService)
         {
             _context = context;
+            _cajaService = cajaService;
         }
 
         public async Task RegistrarVentaAsync(int pedidoId, List<RegistrarPagoDto> pagos)
@@ -30,10 +33,13 @@ namespace SistemaPedidos.Infrastructure.Services.Ventas
             if (pedido == null)
                 throw new Exception("Pedido no encontrado.");
 
-            var totalPagos = pagos.Sum(p => p.Monto);
+            if (pedido.Estado == EstadoPedido.Terminado)
+                throw new Exception("El pedido ya fue cobrado.");
+
+            var totalPagos = pagos.Sum(x => x.Monto);
 
             if (totalPagos != pedido.TotalGeneral)
-                throw new Exception("La suma de los pagos no coincide con el total.");
+                throw new Exception("La suma de los pagos no coincide con el total del pedido.");
 
             var venta = new Venta
             {
@@ -43,15 +49,36 @@ namespace SistemaPedidos.Infrastructure.Services.Ventas
                 TotalEnvio = pedido.PrecioEnvio,
                 TotalGeneral = pedido.TotalGeneral,
                 Anulada = false,
-                Pagos = pagos.Select(p => new Pago
+                Pagos = pagos.Select(x => new Pago
                 {
-                    Monto = p.Monto,
-                    FormaPago = p.FormaPago,
+                    FormaPago = x.FormaPago,
+                    Monto = x.Monto,
                     Fecha = DateTime.Now
                 }).ToList()
             };
 
             _context.Ventas.Add(venta);
+
+            var totalEfectivo = pagos
+                .Where(x => x.FormaPago == FormaPago.Efectivo)
+                .Sum(x => x.Monto);
+
+            if (pedido.TipoPedido == TipoPedido.Delivery)
+            {
+                totalEfectivo -= pedido.PrecioEnvio;
+
+                if (totalEfectivo < 0)
+                    totalEfectivo = 0;
+            }
+
+            if (totalEfectivo > 0)
+            {
+                await _cajaService.RegistrarIngresoAsync(
+                    totalEfectivo,
+                    $"Cobro pedido #{pedido.Id}",
+                    pedido.Id
+                );
+            }
 
             pedido.Estado = EstadoPedido.Terminado;
 
@@ -65,7 +92,7 @@ namespace SistemaPedidos.Infrastructure.Services.Ventas
 
             return await _context.Ventas
                 .Where(v => v.FechaVenta >= hoy && v.FechaVenta < mañana)
-                .SumAsync(v => (decimal?)v.TotalGeneral) ?? 0;
+                .SumAsync(v => (decimal?)(v.TotalGeneral - v.TotalEnvio)) ?? 0;
         }
 
         public async Task<decimal> ObtenerTotalVentasDeAyerAsync()
@@ -75,7 +102,7 @@ namespace SistemaPedidos.Infrastructure.Services.Ventas
 
             return await _context.Ventas
                 .Where(v => v.FechaVenta >= ayer && v.FechaVenta < hoy)
-                .SumAsync(v => (decimal?)v.TotalGeneral) ?? 0;
+                .SumAsync(v => (decimal?)(v.TotalGeneral - v.TotalEnvio)) ?? 0;
         }
 
         public async Task<int> ObtenerCantidadVentasDelDiaAsync()

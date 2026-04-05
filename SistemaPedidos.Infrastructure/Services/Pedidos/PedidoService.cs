@@ -22,8 +22,9 @@ public class PedidoService : IPedidoService
             .Include(p => p.Items)
                 .ThenInclude(i => i.Producto)
             .Include(p => p.Delivery)
-            .Where(p => p.Estado != EstadoPedido.Terminado &&
-                        p.Estado != EstadoPedido.Cancelado)
+            .Where(p => p.Activo &&
+                p.Estado != EstadoPedido.Terminado &&
+                p.Estado != EstadoPedido.Cancelado)
             .OrderByDescending(p => p.Fecha)
             .Select(p => new PedidoDto
             {
@@ -113,7 +114,9 @@ public class PedidoService : IPedidoService
             TipoPedido = (TipoPedido)dto.TipoPedido,
             Estado = EstadoPedido.EnPreparacion,
             PrecioEnvio = dto.PrecioEnvio,
-            DeliveryId = dto.DeliveryId
+            DeliveryId = dto.DeliveryId,
+            Activo = true,
+            FechaBaja = null
         };
 
         _context.Pedidos.Add(pedido);
@@ -174,6 +177,66 @@ public class PedidoService : IPedidoService
             return;
 
         pedido.DeliveryId = deliveryId;
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task ActualizarAsync(int pedidoId, CrearPedidoDto dto)
+    {
+        var pedido = await _context.Pedidos
+            .Include(p => p.Items)
+            .FirstOrDefaultAsync(p => p.Id == pedidoId);
+
+        if (pedido == null)
+            throw new Exception("Pedido no encontrado.");
+
+        pedido.NombreCliente = dto.NombreCliente;
+        pedido.Telefono = dto.Telefono;
+        pedido.Direccion = dto.Direccion;
+        pedido.TipoPedido = (TipoPedido)dto.TipoPedido;
+        pedido.PrecioEnvio = dto.PrecioEnvio;
+
+        _context.PedidoItems.RemoveRange(pedido.Items);
+
+        decimal totalProductos = 0;
+
+        foreach (var item in dto.Items)
+        {
+            var precioActual = await _context.PreciosProducto
+                .Where(x => x.ProductoId == item.ProductoId && x.FechaHasta == null)
+                .Select(x => x.Importe)
+                .FirstOrDefaultAsync();
+
+            var subtotal = precioActual * item.Cantidad;
+
+            pedido.Items.Add(new PedidoItem
+            {
+                ProductoId = item.ProductoId,
+                NombreProducto = item.ProductoNombre,
+                Cantidad = item.Cantidad,
+                PrecioUnitario = precioActual,
+                Subtotal = subtotal,
+                Observacion = item.Observacion
+            });
+
+            totalProductos += subtotal;
+        }
+
+        pedido.TotalProductos = totalProductos;
+        pedido.TotalGeneral = totalProductos + pedido.PrecioEnvio;
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DarDeBajaAsync(int pedidoId)
+    {
+        var pedido = await _context.Pedidos.FirstOrDefaultAsync(x => x.Id == pedidoId);
+
+        if (pedido == null)
+            throw new Exception("Pedido no encontrado.");
+
+        pedido.Activo = false;
+        pedido.FechaBaja = DateTime.Now;
 
         await _context.SaveChangesAsync();
     }

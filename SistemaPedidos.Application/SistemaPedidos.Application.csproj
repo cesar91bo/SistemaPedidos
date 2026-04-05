@@ -10,8 +10,4 @@
     <ProjectReference Include="..\SistemaPedidos.Domain\SistemaPedidos.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Features\Caja\" />
-  </ItemGroup>
-
 </Project>

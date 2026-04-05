@@ -196,7 +196,8 @@
             .ToList();
 
         cantidadPendientesCobro = pedidosPendientesCobro.Count;
-        montoPendienteCobro = pedidosPendientesCobro.Sum(x => x.TotalGeneral);
+        montoPendienteCobro = pedidosPendientesCobro.Sum(x =>
+            x.TotalGeneral - (x.TipoPedido == 2 ? x.PrecioEnvio : 0));
     }
 
     private string ObtenerClaseEstado(int estado)

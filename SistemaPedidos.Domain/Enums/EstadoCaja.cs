@@ -6,12 +6,9 @@ using System.Threading.Tasks;
 
 namespace SistemaPedidos.Domain.Enums
 {
-    public enum TipoMovimientoCaja
+    public enum EstadoCaja
     {
-        Apertura = 1,
-        Ingreso = 2,
-        Retiro = 3,
-        Ajuste = 4,
-        Cierre = 5
+        Abierta = 1,
+        Cerrada = 2
     }
 }

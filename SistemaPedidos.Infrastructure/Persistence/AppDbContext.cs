@@ -19,6 +19,8 @@ public class AppDbContext : DbContext
     public DbSet<Pago> Pagos => Set<Pago>();
     public DbSet<Parametro> Parametros { get; set; }
     public DbSet<Delivery> Deliveries { get; set; }
+    public DbSet<Caja> Cajas { get; set; }
+    public DbSet<MovimientoCaja> MovimientosCaja { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -137,5 +139,34 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Activo)
                 .HasDefaultValue(true);
         });
+
+        //Caja y MovimientoCaja relación
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Caja>()
+            .Property(x => x.FondoInicial)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<Caja>()
+            .Property(x => x.TotalEfectivo)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<Caja>()
+            .Property(x => x.TotalRetiros)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<Caja>()
+            .Property(x => x.TotalFinal)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<MovimientoCaja>()
+            .Property(x => x.Monto)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<MovimientoCaja>()
+            .HasOne(x => x.Pedido)
+            .WithMany()
+            .HasForeignKey(x => x.PedidoId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

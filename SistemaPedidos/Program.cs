@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using SistemaPedidos.Application.Features.Caja.Interfaces;
 using SistemaPedidos.Application.Features.Categorias.Interfaces;
 using SistemaPedidos.Application.Features.Deliveries.Interfaces;
+using SistemaPedidos.Application.Features.Informes;
 using SistemaPedidos.Application.Features.Informes.Interfaces;
 using SistemaPedidos.Application.Features.Parametros.Interfaces;
 using SistemaPedidos.Application.Features.Pedidos.Interfaces;
@@ -8,14 +10,14 @@ using SistemaPedidos.Application.Features.Productos.Interfaces;
 using SistemaPedidos.Application.Features.Ventas;
 using SistemaPedidos.Components;
 using SistemaPedidos.Infrastructure.Persistence;
+using SistemaPedidos.Infrastructure.Services.Cajas;
 using SistemaPedidos.Infrastructure.Services.Categorias;
 using SistemaPedidos.Infrastructure.Services.Deliveries;
+using SistemaPedidos.Infrastructure.Services.Informes;
 using SistemaPedidos.Infrastructure.Services.Parametros;
 using SistemaPedidos.Infrastructure.Services.Pedidos;
 using SistemaPedidos.Infrastructure.Services.Productos;
 using SistemaPedidos.Infrastructure.Services.Ventas;
-using SistemaPedidos.Application.Features.Informes;
-using SistemaPedidos.Infrastructure.Services.Informes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +38,7 @@ builder.Services.AddScoped<IVentaService, VentaService>();
 builder.Services.AddScoped<IParametroService, ParametroService>();
 builder.Services.AddScoped<IDeliveryService, DeliveryService>();
 builder.Services.AddScoped<IInformeService, InformeService>();
+builder.Services.AddScoped<ICajaService, CajaService>();
 
 var app = builder.Build();
 

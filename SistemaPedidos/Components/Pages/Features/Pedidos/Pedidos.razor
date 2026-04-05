@@ -241,39 +241,64 @@
                 <td>@pedido.EstadoNombre</td>
                 <td>@pedido.TotalGeneral.ToString("C")</td>
                 <td>@pedido.Fecha.ToString("HH:mm")</td>
-                <td>
-                    @if (pedido.Estado == (int)EstadoPedido.EnPreparacion)
-                    {
-                        <button class="btn btn-sm btn-warning"
-                                @onclick="() => CambiarEstado(pedido.Id, (int)EstadoPedido.Listo)">
-                            Listo
-                        </button>
-                    }
-                    else if (pedido.Estado == (int)EstadoPedido.Listo)
-                    {
-                        @if (pedido.TipoPedido == 2) // Delivery
-                        {
-                            <button class="btn btn-sm btn-primary"
-                                    @onclick="() => AbrirModalEnviar(pedido)">
-                                Enviar
-                            </button>
-                        }
-                        else // Retiro
-                        {
-                            <button class="btn btn-sm btn-success"
-                                    @onclick="() => AbrirCobro(pedido)">
-                                Cobrar
-                            </button>
-                        }
-                    }
-                    else if (pedido.Estado == (int)EstadoPedido.EnCamino)
-                    {
-                        <button class="btn btn-sm btn-success"
-                                @onclick="() => AbrirCobro(pedido)">
-                            Cobrar
-                        </button>
-                    }
-                </td>
+                    <td style="min-width: 140px;">
+                        <div class="d-flex flex-column gap-2">
+
+                            @if (pedido.Estado == (int)EstadoPedido.EnPreparacion)
+                            {
+                                <button class="btn btn-sm btn-warning w-100"
+                                        @onclick="() => CambiarEstado(pedido.Id, (int)EstadoPedido.Listo)">
+                                    Listo
+                                </button>
+                            }
+                            else if (pedido.Estado == (int)EstadoPedido.Listo)
+                            {
+                                @if (pedido.TipoPedido == 2)
+                                {
+                                    <button class="btn btn-sm btn-primary w-100"
+                                            @onclick="() => AbrirModalEnviar(pedido)">
+                                        Enviar
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-success w-100"
+                                            @onclick="() => AbrirCobro(pedido)">
+                                        Cobrar
+                                    </button>
+                                }
+                            }
+                            else if (pedido.Estado == (int)EstadoPedido.EnCamino)
+                            {
+                                <button class="btn btn-sm btn-success w-100"
+                                        @onclick="() => AbrirCobro(pedido)">
+                                    Cobrar
+                                </button>
+                            }
+
+                            <div class="d-flex justify-content-between gap-1">
+
+                                <button class="btn btn-sm btn-outline-secondary flex-fill"
+                                        title="Reimprimir"
+                                        @onclick="() => ReimprimirPedido(pedido.Id)">
+                                    🖨️
+                                </button>
+
+                                <button class="btn btn-sm btn-outline-primary flex-fill"
+                                        title="Editar"
+                                        @onclick="() => EditarPedido(pedido.Id)">
+                                    ✏️
+                                </button>
+
+                                <button class="btn btn-sm btn-outline-danger flex-fill"
+                                        title="Dar de baja"
+                                        @onclick="() => DarDeBaja(pedido.Id)">
+                                    🗑️
+                                </button>
+
+                            </div>
+                        </div>
+                    </td>
 
             </tr>
         }
@@ -435,6 +460,9 @@
 
     private string observacionProducto = "";
 
+    private bool editando = false;
+    private int pedidoEditandoId = 0;
+
     protected override async Task OnInitializedAsync()
     {
         productos = await ProductoService.ObtenerTodosAsync();
@@ -546,7 +574,17 @@
                 }).ToList()
             };
 
-            var pedidoId = await PedidoService.CrearAsync(dto);
+            int pedidoId;
+
+            if (editando)
+            {
+                await PedidoService.ActualizarAsync(pedidoEditandoId, dto);
+                pedidoId = pedidoEditandoId;
+            }
+            else
+            {
+                pedidoId = await PedidoService.CrearAsync(dto);
+            }
 
             NavigationManager.NavigateTo($"/pedidos/comanda/{pedidoId}", true);
 
@@ -586,6 +624,8 @@
             direccion = null;
             tipoPedido = 1;
             deliverySeleccionadoId = 0;
+            editando = false;
+            pedidoEditandoId = 0;
             items.Clear();
 
             intentoGuardar = false;
@@ -597,6 +637,11 @@
         {
             guardando = false;
         }
+    }
+
+    private void ReimprimirPedido(int pedidoId)
+    {
+        NavigationManager.NavigateTo($"/pedidos/comanda/{pedidoId}", true);
     }
 
     private async Task CambiarEstado(int pedidoId, int nuevoEstado)
@@ -660,4 +705,36 @@
         await CargarPedidosActivos();
     }
 
+    private async Task EditarPedido(int pedidoId)
+    {
+        var pedido = await PedidoService.ObtenerPorIdAsync(pedidoId);
+
+        if (pedido == null)
+            return;
+
+        editando = true;
+        pedidoEditandoId = pedido.Id;
+
+        nombreCliente = pedido.NombreCliente;
+        telefono = pedido.Telefono;
+        direccion = pedido.Direccion;
+        tipoPedido = pedido.TipoPedido;
+        precioEnvio = pedido.PrecioEnvio;
+
+        items = pedido.Items.Select(i => new PedidoItemDto
+        {
+            ProductoId = i.ProductoId,
+            ProductoNombre = i.ProductoNombre,
+            Cantidad = i.Cantidad,
+            PrecioUnitario = i.PrecioUnitario,
+            Subtotal = i.Subtotal,
+            Observacion = i.Observacion
+        }).ToList();
+    }
+
+    private async Task DarDeBaja(int pedidoId)
+    {
+        await PedidoService.DarDeBajaAsync(pedidoId);
+        await CargarPedidosActivos();
+    }
 }

@@ -12,13 +12,19 @@ namespace SistemaPedidos.Domain.Entities
         public int Id { get; set; }
 
         public int CajaId { get; set; }
+        public Caja Caja { get; set; } = null!;
+
+        public DateTime Fecha { get; set; }
 
         public TipoMovimientoCaja Tipo { get; set; }
-
-        public string? Concepto { get; set; }
+        // Apertura, Ingreso, Retiro, Ajuste, Cierre
 
         public decimal Monto { get; set; }
 
-        public DateTime Fecha { get; set; }
+        public string Descripcion { get; set; } = string.Empty;
+
+        public int? PedidoId { get; set; }
+
+        public Pedido? Pedido { get; set; }
     }
 }

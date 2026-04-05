@@ -14,4 +14,8 @@ public interface IPedidoService
 
     Task AsignarDeliveryAsync(int pedidoId, int deliveryId);
 
+    Task DarDeBajaAsync(int pedidoId);
+
+    Task ActualizarAsync(int pedidoId, CrearPedidoDto dto);
+
 }
