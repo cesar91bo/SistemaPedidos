@@ -189,5 +189,27 @@ namespace SistemaPedidos.Infrastructure.Services.Cajas
             return await _context.Cajas
                 .AnyAsync(c => c.Estado == EstadoCaja.Abierta);
         }
+
+        public async Task RegistrarIngresoManualAsync(IngresoCajaDto dto)
+        {
+            var caja = await _context.Cajas
+                .FirstOrDefaultAsync(x => x.Estado == EstadoCaja.Abierta);
+
+            if (caja == null)
+                throw new Exception("No hay una caja abierta.");
+
+            var movimiento = new MovimientoCaja
+            {
+                CajaId = caja.Id,
+                Fecha = DateTime.Now,
+                Tipo = TipoMovimientoCaja.Ingreso,
+                Descripcion = dto.Descripcion,
+                Monto = dto.Monto
+            };
+
+            _context.MovimientosCaja.Add(movimiento);
+
+            await _context.SaveChangesAsync();
+        }
     }
 }

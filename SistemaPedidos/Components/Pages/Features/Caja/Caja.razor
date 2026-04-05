@@ -49,6 +49,10 @@ else
             </div>
 
             <div class="cash-actions">
+                <button class="btn btn-success" @onclick="() => mostrarModalIngreso = true">
+                    Ingresar dinero
+                </button>
+
                 <button class="btn btn-warning" @onclick="() => mostrarModalRetiro = true">
                     Retirar dinero
                 </button>
@@ -217,6 +221,49 @@ else
     </div>
 }
 
+@if (mostrarModalIngreso)
+{
+    <div class="cash-modal-backdrop">
+        <div class="cash-modal">
+
+            <div class="cash-modal-header">
+                <h3>Ingresar dinero</h3>
+                <button class="btn-close" @onclick="CerrarModalIngreso"></button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(error))
+            {
+                <div class="alert alert-danger">
+                    @error
+                </div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label">Monto</label>
+                <InputNumber class="form-control"
+                             @bind-Value="ingreso.Monto" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Detalle</label>
+                <InputText class="form-control"
+                           @bind-Value="ingreso.Descripcion" />
+            </div>
+
+            <div class="cash-modal-actions">
+                <button class="btn btn-secondary" @onclick="CerrarModalIngreso">
+                    Cancelar
+                </button>
+
+                <button class="btn btn-success" @onclick="GuardarIngreso">
+                    Confirmar ingreso
+                </button>
+            </div>
+
+        </div>
+    </div>
+}
+
 @code {
     private CajaDto? caja;
     private AbrirCajaDto apertura = new();
@@ -224,6 +271,9 @@ else
 
     private bool mostrarModalRetiro;
     private RetiroCajaDto retiro = new();
+
+    private bool mostrarModalIngreso;
+    private IngresoCajaDto ingreso = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -240,8 +290,9 @@ else
         if (caja == null)
             return 0;
 
-        return caja.Movimientos
-            .Count(x => x.Tipo == TipoMovimientoCaja.Ingreso);
+        return caja.Movimientos.Count(x =>
+            x.Tipo == TipoMovimientoCaja.Ingreso &&
+            x.Descripcion.StartsWith("Cobro pedido"));
     }
 
     private async Task AbrirCaja()
@@ -318,6 +369,45 @@ else
             caja = await CajaService.ObtenerCajaAbiertaAsync();
 
             CerrarModalRetiro();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private void CerrarModalIngreso()
+    {
+        mostrarModalIngreso = false;
+        ingreso = new IngresoCajaDto();
+        error = null;
+    }
+
+    private async Task GuardarIngreso()
+    {
+        try
+        {
+            error = null;
+
+            if (ingreso.Monto <= 0)
+            {
+                error = "Ingresá un monto válido.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(ingreso.Descripcion))
+            {
+                error = "Ingresá un detalle.";
+                return;
+            }
+
+            await CajaService.RegistrarIngresoManualAsync(ingreso);
+
+            caja = await CajaService.ObtenerCajaAbiertaAsync();
+
+            CerrarModalIngreso();
 
             StateHasChanged();
         }

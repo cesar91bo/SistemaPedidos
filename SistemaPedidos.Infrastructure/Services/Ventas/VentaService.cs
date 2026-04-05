@@ -123,7 +123,7 @@ namespace SistemaPedidos.Infrastructure.Services.Ventas
             var mañana = hoy.AddDays(1);
 
             return await _context.Ventas
-                //.Where(v => v.FechaVenta >= hoy && v.FechaVenta < mañana)
+                .Where(v => v.FechaVenta >= hoy && v.FechaVenta < mañana)
                 .SelectMany(v => v.Pedido!.Items)
                 .GroupBy(i => i.Producto!.Nombre)
                 .Select(g => new ProductoMasVendidoDto

@@ -20,5 +20,7 @@ namespace SistemaPedidos.Application.Features.Caja.Interfaces
         Task CerrarAsync();
 
         Task<bool> HayCajaAbiertaAsync();
+
+        Task RegistrarIngresoManualAsync(IngresoCajaDto dto);
     }
 }
