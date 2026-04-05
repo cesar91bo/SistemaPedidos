@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using SistemaPedidos.Application.Features.Caja.Interfaces
 @using SistemaPedidos.Application.Features.Pedidos.DTOs
 @using SistemaPedidos.Application.Features.Pedidos.Interfaces
 @using SistemaPedidos.Application.Features.Ventas
@@ -7,6 +8,7 @@
 
 @inject IVentaService VentaService
 @inject IPedidoService PedidoService
+@inject ICajaService CajaService
 
 <div class="topbar">
     <div>
@@ -18,6 +20,20 @@
 </div>
 
 <PageTitle>Dashboard</PageTitle>
+
+@if (!hayCajaAbierta)
+{
+    <div class="alert-caja">
+        <div>
+            <strong>No hay una caja abierta.</strong><br />
+            Debe abrir la caja para comenzar a cobrar pedidos.
+        </div>
+
+        <a href="/caja" class="btn-abrir-caja">
+            Abrir caja
+        </a>
+    </div>
+}
 
 <div class="dashboard-grid">
 
@@ -166,9 +182,11 @@
     private int cantidadPendientesCobro;
     private List<PedidoDto> ultimosPedidos = new();
     private List<ProductoMasVendidoDto> productosMasVendidos = new();
+    private bool hayCajaAbierta;
 
     protected override async Task OnInitializedAsync()
     {
+        hayCajaAbierta = await CajaService.HayCajaAbiertaAsync();
         ventasDelDia = await VentaService.ObtenerTotalVentasDelDiaAsync();
         ventasAyer = await VentaService.ObtenerTotalVentasDeAyerAsync();
         productosMasVendidos = await VentaService.ObtenerProductosMasVendidosAsync();
@@ -365,6 +383,27 @@
         .dashboard-grid {
             grid-template-columns: 1fr;
         }
+    }
+
+    .alert-caja {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        border-radius: 18px;
+        padding: 18px 22px;
+        margin-bottom: 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .btn-abrir-caja {
+        background: #dc2626;
+        color: white !important;
+        text-decoration: none;
+        padding: 10px 16px;
+        border-radius: 12px;
+        font-weight: 600;
     }
 
 </style>

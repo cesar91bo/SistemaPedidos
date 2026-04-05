@@ -26,6 +26,9 @@ namespace SistemaPedidos.Infrastructure.Services.Ventas
 
         public async Task RegistrarVentaAsync(int pedidoId, List<RegistrarPagoDto> pagos)
         {
+            if (!await _cajaService.HayCajaAbiertaAsync())
+                throw new Exception("Debe abrir una caja antes de registrar una venta.");
+
             var pedido = await _context.Pedidos
                 .Include(p => p.Items)
                 .FirstOrDefaultAsync(p => p.Id == pedidoId);

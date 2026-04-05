@@ -183,5 +183,11 @@ namespace SistemaPedidos.Infrastructure.Services.Cajas
 
             await _context.SaveChangesAsync();
         }
+
+        public async Task<bool> HayCajaAbiertaAsync()
+        {
+            return await _context.Cajas
+                .AnyAsync(c => c.Estado == EstadoCaja.Abierta);
+        }
     }
 }

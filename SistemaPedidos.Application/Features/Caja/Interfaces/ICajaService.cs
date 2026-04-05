@@ -18,5 +18,7 @@ namespace SistemaPedidos.Application.Features.Caja.Interfaces
         Task RegistrarRetiroAsync(RetiroCajaDto dto);
 
         Task CerrarAsync();
+
+        Task<bool> HayCajaAbiertaAsync();
     }
 }
