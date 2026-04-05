@@ -1,0 +1,258 @@
+﻿@page "/pedidos/comanda/{Id:int}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
+@using SistemaPedidos.Application.Features.Pedidos.DTOs
+@using SistemaPedidos.Application.Features.Pedidos.Interfaces
+
+@inject IPedidoService PedidoService
+
+@inject NavigationManager NavigationManager
+
+<PageTitle>@($"Pedido_{pedido?.NombreCliente}_{pedido?.Id}_{pedido?.Fecha:yyyyMMdd_HHmm}")</PageTitle>
+
+@if (pedido == null)
+{
+    <p>Cargando...</p>
+}
+else
+{
+    <div class="ticket-container">
+
+        <div class="ticket-header">
+            <img src="/images/Logo/logo.png" alt="El Buitre Delivery" />
+
+            <div class="ticket-subtitle">
+                Pedido #@pedido.Id
+            </div>
+
+            <div class="ticket-date">
+                @pedido.Fecha.ToString("dd/MM/yyyy HH:mm")
+            </div>
+        </div>
+
+        <hr />
+
+        <div class="ticket-section">
+            <strong>Cliente:</strong> @pedido.NombreCliente<br />
+            @if (!string.IsNullOrWhiteSpace(pedido.Telefono))
+            {
+                <span><strong>Tel:</strong> @pedido.Telefono</span>
+
+                <br />
+            }
+
+            <strong>Tipo:</strong> @pedido.TipoPedidoNombre<br />
+
+            @if (!string.IsNullOrWhiteSpace(pedido.Direccion))
+            {
+                <span><strong>Dirección:</strong> @pedido.Direccion</span>
+
+                <br />
+            }
+
+            @if (!string.IsNullOrWhiteSpace(pedido.DeliveryNombre))
+            {
+                <span><strong>Delivery:</strong> @pedido.DeliveryNombre</span>
+            }
+        </div>
+
+        <hr />
+
+        <div class="ticket-section">
+            @foreach (var item in pedido.Items)
+            {
+                <div class="item-row">
+                    <div>
+                        @item.Cantidad x @item.ProductoNombre
+                    </div>
+                    <div>
+                        @item.Subtotal.ToString("C0")
+                    </div>
+                </div>
+            }
+        </div>
+
+        <hr />
+
+        <div class="totals">
+            <div class="item-row">
+                <span>Productos</span>
+                <span>@pedido.TotalProductos.ToString("C0")</span>
+            </div>
+
+            @if (pedido.PrecioEnvio > 0)
+            {
+                <div class="item-row">
+                    <span>Envío</span>
+                    <span>@pedido.PrecioEnvio.ToString("C0")</span>
+                </div>
+            }
+
+            <div class="item-row total">
+                <span>TOTAL</span>
+                <span>@pedido.TotalGeneral.ToString("C0")</span>
+            </div>
+
+            <div class="ticket-footer">
+                <strong>¡Gracias por elegirnos!</strong>
+                Te esperamos nuevamente
+            </div>
+        </div>
+
+        <div class="actions no-print">
+            <button class="btn btn-primary" @onclick="Imprimir">
+                Imprimir
+            </button>
+
+            <button class="btn btn-secondary" @onclick="Volver">
+                Volver
+            </button>
+        </div>
+    </div>
+}
+
+<style>
+    .ticket-container {
+        width: 80mm;
+        margin: 20px auto;
+        background: white;
+        padding: 12px;
+        font-family: Arial, sans-serif;
+        color: black;
+    }
+
+    .ticket-header {
+        text-align: center;
+    }
+
+    .logo {
+        max-width: 80px;
+        margin-bottom: 8px;
+    }
+
+    .ticket-header h2 {
+        margin: 0;
+        font-size: 20px;
+    }
+
+    .ticket-header p {
+        margin: 2px 0;
+        font-size: 13px;
+    }
+
+    .ticket-section {
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .item-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+        font-size: 13px;
+    }
+
+    .totals {
+        margin-top: 10px;
+    }
+
+    .total {
+        font-size: 16px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+
+    .actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .ticket-header img {
+        width: 180px;
+        max-width: 100%;
+        display: block;
+        margin: 0 auto 12px auto;
+    }
+
+    .ticket-title {
+        display: none;
+    }
+
+    .ticket-footer {
+        text-align: center;
+        margin-top: 24px;
+        font-size: 14px;
+        color: #555;
+        line-height: 1.5;
+    }
+
+        .ticket-footer strong {
+            display: block;
+            font-size: 18px;
+            color: #000;
+            margin-bottom: 4px;
+        }
+
+    @@media print {
+
+        body * {
+            visibility: hidden;
+        }
+
+        .ticket-container,
+        .ticket-container * {
+            visibility: visible;
+        }
+
+        .ticket-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 80mm;
+            margin: 0;
+            padding: 5mm;
+            background: white;
+        }
+
+        .no-print {
+            display: none !important;
+        }
+
+        nav,
+        aside,
+        header,
+        footer,
+        .sidebar,
+        .top-row {
+            display: none !important;
+        }
+    }
+</style>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private PedidoDto? pedido;
+
+    protected override async Task OnInitializedAsync()
+    {
+        pedido = await PedidoService.ObtenerPorIdAsync(Id);
+    }
+
+    private async Task Imprimir()
+    {
+        await JS.InvokeVoidAsync("print");
+    }
+
+    private void Volver()
+    {
+        NavigationManager.NavigateTo("/pedidos");
+    }
+
+    [Inject]
+    private IJSRuntime JS { get; set; } = default!;
+}

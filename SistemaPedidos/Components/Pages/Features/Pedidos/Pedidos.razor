@@ -23,6 +23,8 @@
 @inject IParametroService ParametroService
 @inject IDeliveryService DeliveryService
 
+@inject NavigationManager NavigationManager
+
 <h3>Gestión de Pedidos</h3>
 
 <div class="row">
@@ -60,55 +62,25 @@
 
         @if (tipoPedido == 2)
         {
-            @if (!deliveries.Any())
-            {
-                <div class="alert alert-warning">
-                    Debe cargar al menos un delivery en la sección Delivery antes de crear un pedido con envío.
-                </div>
-            }
-            else
-            {
-                <div class="mb-2">
-                    <label>Delivery</label>
+            <div class="mb-2">
+                <label>Dirección</label>
+                <input class="form-control" @bind="direccion" />
+            </div>
 
-                    <select class="form-select @(intentoGuardar && deliverySeleccionadoId == 0 ? "is-invalid" : "")"
-                            @bind="deliverySeleccionadoId">
-                        <option value="0">Seleccione delivery</option>
+            <div class="mb-2">
+                <label>Precio Envío</label>
 
-                        @foreach (var delivery in deliveries)
-                        {
-                            <option value="@delivery.Id">@delivery.Nombre</option>
-                        }
-                    </select>
+                <input type="number"
+                       class="form-control @(intentoGuardar && precioEnvio <= 0 ? "is-invalid" : "")"
+                       @bind="precioEnvio" />
 
-                    @if (intentoGuardar && deliverySeleccionadoId == 0)
-                    {
-                        <div class="invalid-feedback">
-                            Debe seleccionar quién realiza el envío.
-                        </div>
-                    }
-                </div>
-
-                <div class="mb-2">
-                    <label>Dirección</label>
-                    <input class="form-control" @bind="direccion" />
-                </div>
-
-                <div class="mb-2">
-                    <label>Precio Envío</label>
-
-                    <input type="number"
-                           class="form-control @(intentoGuardar && precioEnvio <= 0 ? "is-invalid" : "")"
-                           @bind="precioEnvio" />
-
-                    @if (intentoGuardar && precioEnvio <= 0)
-                    {
-                        <div class="invalid-feedback">
-                            Debe ingresar un precio de envío.
-                        </div>
-                    }
-                </div>
-            }
+                @if (intentoGuardar && precioEnvio <= 0)
+                {
+                    <div class="invalid-feedback">
+                        Debe ingresar un precio de envío.
+                    </div>
+                }
+            </div>
         }
 
         <hr />
@@ -196,152 +168,189 @@
         </button>
 
     </div>
+</div>
+<hr />
 
-    <hr />
+<h4>Pedidos Activos</h4>
 
-    <h4>Pedidos Activos</h4>
-
-    <table class="table table-bordered">
-        <thead>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Cliente</th>
+            <th>Tipo</th>
+            <th>Detalle</th>
+            <th>Estado</th>
+            <th>Total</th>
+            <th>Hora</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var pedido in pedidosActivos)
+        {
             <tr>
-                <th>#</th>
-                <th>Cliente</th>
-                <th>Tipo</th>
-                <th>Detalle</th>
-                <th>Estado</th>
-                <th>Total</th>
-                <th>Hora</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var pedido in pedidosActivos)
-            {
-                <tr>
-                    <td>@pedido.Id</td>
-                    <td>@pedido.NombreCliente</td>
-                    <td title="@(pedido.TipoPedidoNombre == "Delivery" && !string.IsNullOrWhiteSpace(pedido.DeliveryNombre)
-                                                                ? $"Envía: {pedido.DeliveryNombre}"
-                                                                : "")">
+                <td>@pedido.Id</td>
+                <td>@pedido.NombreCliente</td>
+                <td title="@(pedido.TipoPedidoNombre == "Delivery" && !string.IsNullOrWhiteSpace(pedido.DeliveryNombre)
+                                                                                                                                                            ? $"Envía: {pedido.DeliveryNombre}"
+                                                                                                                                                            : "")">
 
-                        @if (pedido.TipoPedidoNombre == "Delivery")
-                        {
-                            <span style="cursor: help; text-decoration: underline dotted;">
-                                @pedido.TipoPedidoNombre
-                            </span>
-                        }
-                        else
-                        {
+                    @if (pedido.TipoPedidoNombre == "Delivery")
+                    {
+                        <span style="cursor: help; text-decoration: underline dotted;">
                             @pedido.TipoPedidoNombre
-                        }
-                    </td>
-                    <td>
-                        @foreach (var item in pedido.Items)
+                        </span>
+                    }
+                    else
+                    {
+                        @pedido.TipoPedidoNombre
+                    }
+                </td>
+                <td>
+                    @foreach (var item in pedido.Items)
+                    {
+                        <div>
+                            @item.Cantidad x @item.ProductoNombre
+                        </div>
+                    }
+                </td>
+                <td>@pedido.EstadoNombre</td>
+                <td>@pedido.TotalGeneral.ToString("C")</td>
+                <td>@pedido.Fecha.ToString("HH:mm")</td>
+                <td>
+                    @if (pedido.Estado == (int)EstadoPedido.EnPreparacion)
+                    {
+                        <button class="btn btn-sm btn-warning"
+                                @onclick="() => CambiarEstado(pedido.Id, (int)EstadoPedido.Listo)">
+                            Listo
+                        </button>
+                    }
+                    else if (pedido.Estado == (int)EstadoPedido.Listo)
+                    {
+                        @if (pedido.TipoPedido == 2) // Delivery
                         {
-                            <div>
-                                @item.Cantidad x @item.ProductoNombre
-                            </div>
-                        }
-                    </td>
-                    <td>@pedido.EstadoNombre</td>
-                    <td>@pedido.TotalGeneral.ToString("C")</td>
-                    <td>@pedido.Fecha.ToString("HH:mm")</td>
-                    <td>
-                        @if (pedido.Estado == (int)EstadoPedido.EnPreparacion)
-                        {
-                            <button class="btn btn-sm btn-warning"
-                                    @onclick="() => CambiarEstado(pedido.Id, (int)EstadoPedido.Listo)">
-                                Listo
+                            <button class="btn btn-sm btn-primary"
+                                    @onclick="() => AbrirModalEnviar(pedido)">
+                                Enviar
                             </button>
                         }
-                        else if (pedido.Estado == (int)EstadoPedido.Listo)
-                        {
-                            @if (pedido.TipoPedido == 2) // Delivery
-                            {
-                                <button class="btn btn-sm btn-primary"
-                                        @onclick="() => CambiarEstado(pedido.Id, (int)EstadoPedido.EnCamino)">
-                                    Enviar
-                                </button>
-                            }
-                            else // Retiro
-                            {
-                                <button class="btn btn-sm btn-success"
-                                        @onclick="() => AbrirCobro(pedido)">
-                                    Cobrar
-                                </button>
-                            }
-                        }
-                        else if (pedido.Estado == (int)EstadoPedido.EnCamino)
+                        else // Retiro
                         {
                             <button class="btn btn-sm btn-success"
                                     @onclick="() => AbrirCobro(pedido)">
                                 Cobrar
                             </button>
                         }
-                    </td>
-
-                </tr>
-            }
-        </tbody>
-
-    </table>
-
-    @if (mostrarModalCobro && pedidoCobro != null)
-    {
-        <div class="modal show d-block" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content p-3">
-
-                    <h5>Cobrar Pedido #@pedidoCobro.Id</h5>
-
-                    <p>Total: @pedidoCobro.TotalGeneral.ToString("C")</p>
-
-                    @foreach (var pago in pagos)
-                    {
-                        <div class="row mb-2">
-                            <div class="col">
-                                <select class="form-select" @bind="pago.FormaPago">
-                                    @foreach (var forma in Enum.GetValues<FormaPago>())
-                                    {
-                                        <option value="@forma">
-                                            @(forma.GetType().GetField(forma.ToString())?.GetCustomAttribute<DisplayAttribute>()?.Name ?? forma.ToString())
-                                        </option>
-                                    }
-                                </select>
-                            </div>
-                            <div class="col">
-                                <input type="number"
-                                       class="form-control"
-                                       @bind="pago.Monto" />
-                            </div>
-                        </div>
                     }
+                    else if (pedido.Estado == (int)EstadoPedido.EnCamino)
+                    {
+                        <button class="btn btn-sm btn-success"
+                                @onclick="() => AbrirCobro(pedido)">
+                            Cobrar
+                        </button>
+                    }
+                </td>
 
-                    <button class="btn btn-secondary mb-2"
-                            @onclick="() => pagos.Add(new RegistrarPagoDto { FormaPago = FormaPago.Efectivo, Monto = Saldo })">
-                        Agregar otro medio
-                    </button>
+            </tr>
+        }
+    </tbody>
 
-                    <p>Total Pagado: @TotalPagado.ToString("C")</p>
-                    <p>Saldo: @Saldo.ToString("C")</p>
+</table>
 
-                    <button class="btn btn-success"
-                            disabled="@(TotalPagado != pedidoCobro.TotalGeneral)"
-                            @onclick="ConfirmarCobro">
-                        Confirmar
-                    </button>
+@if (mostrarModalCobro && pedidoCobro != null)
+{
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content p-3">
 
-                    <button class="btn btn-danger"
-                            @onclick="() => mostrarModalCobro = false">
-                        Cancelar
-                    </button>
+                <h5>Cobrar Pedido #@pedidoCobro.Id</h5>
 
-                </div>
+                <p>Total: @pedidoCobro.TotalGeneral.ToString("C")</p>
+
+                @foreach (var pago in pagos)
+                {
+                    <div class="row mb-2">
+                        <div class="col">
+                            <select class="form-select" @bind="pago.FormaPago">
+                                @foreach (var forma in Enum.GetValues<FormaPago>())
+                                {
+                                    <option value="@forma">
+                                        @(forma.GetType().GetField(forma.ToString())?.GetCustomAttribute<DisplayAttribute>()?.Name ?? forma.ToString())
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col">
+                            <input type="number"
+                                   class="form-control"
+                                   @bind="pago.Monto" />
+                        </div>
+                    </div>
+                }
+
+                <button class="btn btn-secondary mb-2"
+                        @onclick="() => pagos.Add(new RegistrarPagoDto { FormaPago = FormaPago.Efectivo, Monto = Saldo })">
+                    Agregar otro medio
+                </button>
+
+                <p>Total Pagado: @TotalPagado.ToString("C")</p>
+                <p>Saldo: @Saldo.ToString("C")</p>
+
+                <button class="btn btn-success"
+                        disabled="@(TotalPagado != pedidoCobro.TotalGeneral)"
+                        @onclick="ConfirmarCobro">
+                    Confirmar
+                </button>
+
+                <button class="btn btn-danger"
+                        @onclick="() => mostrarModalCobro = false">
+                    Cancelar
+                </button>
+
             </div>
         </div>
-    }
+    </div>
+}
 
-</div>
+@if (mostrarModalDelivery && pedidoEnviar != null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,.4)">
+        <div class="modal-dialog">
+            <div class="modal-content p-3">
+
+                <h5>Seleccionar Delivery</h5>
+
+                <p>
+                    Pedido #@pedidoEnviar.Id - @pedidoEnviar.NombreCliente
+                </p>
+
+                <select class="form-select mb-3" @bind="deliveryParaEnviarId">
+                    <option value="0">Seleccione delivery</option>
+
+                    @foreach (var d in deliveries)
+                    {
+                        <option value="@d.Id">@d.Nombre</option>
+                    }
+                </select>
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary"
+                            disabled="@(deliveryParaEnviarId == 0)"
+                            @onclick="ConfirmarEnviar">
+                        Confirmar envío
+                    </button>
+
+                    <button class="btn btn-secondary"
+                            @onclick="CerrarModalEnviar">
+                        Cancelar
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private bool intentoGuardar = false;
@@ -396,6 +405,10 @@
 
     private List<DeliveryDto> deliveries = new();
     private int deliverySeleccionadoId = 0;
+
+    private bool mostrarModalDelivery = false;
+    private PedidoDto? pedidoEnviar;
+    private int deliveryParaEnviarId = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -476,9 +489,6 @@
         if (tipoPedido == 2 && precioEnvio <= 0)
             return;
 
-        if (tipoPedido == 2 && deliverySeleccionadoId == 0)
-            return;
-
         if (guardando)
             return;
 
@@ -493,7 +503,7 @@
                 Direccion = direccion,
                 TipoPedido = tipoPedido,
                 PrecioEnvio = precioEnvio,
-                DeliveryId = tipoPedido == 2 ? deliverySeleccionadoId : null,
+                DeliveryId = null,
                 Items = items.Select(i => new CrearPedidoItemDto
                 {
                     ProductoId = i.ProductoId,
@@ -501,7 +511,9 @@
                 }).ToList()
             };
 
-            await PedidoService.CrearAsync(dto);
+            var pedidoId = await PedidoService.CrearAsync(dto);
+
+            NavigationManager.NavigateTo($"/pedidos/comanda/{pedidoId}", true);
 
             if (tipoPedido == 2 && precioEnvio > 0 && precioEnvio != ultimoPrecioEnvio)
             {
@@ -578,6 +590,37 @@
         await VentaService.RegistrarVentaAsync(pedidoCobro.Id, pagos);
 
         mostrarModalCobro = false;
+        await CargarPedidosActivos();
+    }
+
+    private void AbrirModalEnviar(PedidoDto pedido)
+    {
+        pedidoEnviar = pedido;
+        deliveryParaEnviarId = 0;
+        mostrarModalDelivery = true;
+    }
+
+    private void CerrarModalEnviar()
+    {
+        mostrarModalDelivery = false;
+        pedidoEnviar = null;
+        deliveryParaEnviarId = 0;
+    }
+
+    private async Task ConfirmarEnviar()
+    {
+        if (pedidoEnviar == null || deliveryParaEnviarId == 0)
+            return;
+
+        await PedidoService.AsignarDeliveryAsync(
+            pedidoEnviar.Id,
+            deliveryParaEnviarId);
+
+        await PedidoService.CambiarEstadoAsync(
+            pedidoEnviar.Id,
+            (int)EstadoPedido.EnCamino);
+
+        CerrarModalEnviar();
         await CargarPedidosActivos();
     }
 

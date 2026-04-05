@@ -12,4 +12,6 @@ public interface IPedidoService
 
     Task CambiarEstadoAsync(int pedidoId, int nuevoEstado);
 
+    Task AsignarDeliveryAsync(int pedidoId, int deliveryId);
+
 }

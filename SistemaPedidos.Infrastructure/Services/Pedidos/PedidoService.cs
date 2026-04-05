@@ -161,6 +161,18 @@ public class PedidoService : IPedidoService
 
         await _context.SaveChangesAsync();
     }
+
+    public async Task AsignarDeliveryAsync(int pedidoId, int deliveryId)
+    {
+        var pedido = await _context.Pedidos.FindAsync(pedidoId);
+
+        if (pedido == null)
+            return;
+
+        pedido.DeliveryId = deliveryId;
+
+        await _context.SaveChangesAsync();
+    }
 }
 
 
