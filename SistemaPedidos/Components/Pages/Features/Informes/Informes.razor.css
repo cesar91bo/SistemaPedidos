@@ -1,5 +1,4 @@
-﻿<style >
-.reports-page {
+﻿.reports-page {
     padding: 2rem;
 }
 
@@ -167,9 +166,31 @@
     padding: 1rem 0;
     border-bottom: 1px solid #ececec;
 }
-
-    .top-product:last-child {
+.top-product:last-child {
         border-bottom: none;
     }
+.top-product {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid #ececec;
+}
 
-</style >
+.product-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    color: #1f2937;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.top-product strong {
+    flex-shrink: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+

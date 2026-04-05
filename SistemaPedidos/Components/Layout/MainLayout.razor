@@ -45,15 +45,6 @@
     </aside>
 
     <main class="main-content">
-        <header class="topbar">
-            <div>
-                <h1>Panel Principal</h1>
-                <span>@DateTime.Now.ToString("dddd dd 'de' MMMM")</span>
-            </div>
-
-            <a class="new-order-btn" href="/pedidos">+ Nuevo Pedido</a>
-        </header>
-
         <section class="page-content">
             @Body
         </section>
@@ -140,19 +131,4 @@
         padding: 28px;
     }
 
-    .topbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 28px;
-    }
-
-    .new-order-btn {
-        background: #2563eb;
-        color: white !important;
-        text-decoration: none;
-        padding: 12px 18px;
-        border-radius: 14px;
-        display: inline-block;
-    }
 </style>

@@ -64,7 +64,16 @@
         {
             <div class="mb-2">
                 <label>Dirección</label>
-                <input class="form-control" @bind="direccion" />
+
+                <input class="form-control @(intentoGuardar && string.IsNullOrWhiteSpace(direccion) ? "is-invalid" : "")"
+                       @bind="direccion" />
+
+                @if (intentoGuardar && string.IsNullOrWhiteSpace(direccion))
+                {
+                    <div class="invalid-feedback">
+                        Debe ingresar la dirección para un pedido delivery.
+                    </div>
+                }
             </div>
 
             <div class="mb-2">
@@ -486,6 +495,12 @@
             return;
         }
 
+        if (tipoPedido == 2 && string.IsNullOrWhiteSpace(direccion))
+            return;
+
+        if (tipoPedido == 2 && precioEnvio <= 0)
+            return;
+
         if (tipoPedido == 2 && precioEnvio <= 0)
             return;
 
@@ -507,6 +522,7 @@
                 Items = items.Select(i => new CrearPedidoItemDto
                 {
                     ProductoId = i.ProductoId,
+                    ProductoNombre = i.ProductoNombre,
                     Cantidad = i.Cantidad
                 }).ToList()
             };
@@ -514,6 +530,7 @@
             var pedidoId = await PedidoService.CrearAsync(dto);
 
             NavigationManager.NavigateTo($"/pedidos/comanda/{pedidoId}", true);
+
 
             if (tipoPedido == 2 && precioEnvio > 0 && precioEnvio != ultimoPrecioEnvio)
             {

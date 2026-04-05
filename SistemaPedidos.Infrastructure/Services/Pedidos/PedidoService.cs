@@ -132,6 +132,7 @@ public class PedidoService : IPedidoService
             {
                 PedidoId = pedido.Id,
                 ProductoId = item.ProductoId,
+                NombreProducto = item.ProductoNombre,
                 Cantidad = item.Cantidad,
                 PrecioUnitario = precioActual,
                 Subtotal = subtotal

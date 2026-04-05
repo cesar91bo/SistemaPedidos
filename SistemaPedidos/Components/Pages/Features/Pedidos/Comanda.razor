@@ -34,26 +34,17 @@ else
         <hr />
 
         <div class="ticket-section">
-            <strong>Cliente:</strong> @pedido.NombreCliente<br />
-            @if (!string.IsNullOrWhiteSpace(pedido.Telefono))
-            {
-                <span><strong>Tel:</strong> @pedido.Telefono</span>
-
-                <br />
-            }
-
-            <strong>Tipo:</strong> @pedido.TipoPedidoNombre<br />
+            <div><strong>Cliente:</strong> @pedido.NombreCliente</div>
+            <div><strong>Tipo:</strong> @pedido.TipoPedidoNombre</div>
 
             @if (!string.IsNullOrWhiteSpace(pedido.Direccion))
             {
-                <span><strong>Dirección:</strong> @pedido.Direccion</span>
-
-                <br />
+                <div><strong>Dirección:</strong> @pedido.Direccion</div>
             }
 
-            @if (!string.IsNullOrWhiteSpace(pedido.DeliveryNombre))
+            @if (!string.IsNullOrWhiteSpace(pedido.Telefono))
             {
-                <span><strong>Delivery:</strong> @pedido.DeliveryNombre</span>
+                <div><strong>Teléfono:</strong> @pedido.Telefono</div>
             }
         </div>
 
@@ -96,7 +87,11 @@ else
 
             <div class="ticket-footer">
                 <strong>¡Gracias por elegirnos!</strong>
-                Te esperamos nuevamente
+                <div>Te esperamos nuevamente</div>
+
+                <div class="company-phone">
+                    Consultas y pedidos: 3644 105455
+                </div>
             </div>
         </div>
 
@@ -230,6 +225,11 @@ else
             display: none !important;
         }
     }
+    .company-phone {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #666;
+}
 </style>
 
 @code {

@@ -1,7 +1,13 @@
 ﻿@page "/informes"
+@rendermode InteractiveServer
 @using SistemaPedidos.Application.Features.Ventas
 @using SistemaPedidos.Application.Features.Ventas.DTOs
+@using SistemaPedidos.Application.Features.Informes.DTOs
+@using SistemaPedidos.Application.Features.Informes.Interfaces
+
+@inject IInformeService InformeService
 @inject IVentaService VentaService
+@inject IJSRuntime JS
 
 <div class="reports-page">
 
@@ -11,7 +17,7 @@
             <p>Consultá ventas y pedidos por período</p>
         </div>
 
-        <button class="btn-print">
+        <button class="btn-print" @onclick="Imprimir">
             🖨️ Imprimir
         </button>
     </div>
@@ -19,160 +25,375 @@
     <div class="filters-card">
         <div class="filter-group">
             <label>Período</label>
-            <select class="form-select">
-                <option>Hoy</option>
-                <option>Esta semana</option>
-                <option>Este mes</option>
-                <option>Personalizado</option>
+            <select class="form-select" @bind="PeriodoSeleccionado">
+                <option value="Hoy">Hoy</option>
+                <option value="Esta semana">Esta semana</option>
+                <option value="Este mes">Este mes</option>
+                <option value="Personalizado">Personalizado</option>
             </select>
         </div>
 
         <div class="filter-group">
             <label>Desde</label>
-            <input type="date" class="form-control" />
+            <input type="date"
+                   class="form-control"
+                   @bind="FechaDesde"
+                   disabled="@(PeriodoSeleccionado != "Personalizado")" />
         </div>
 
         <div class="filter-group">
             <label>Hasta</label>
-            <input type="date" class="form-control" />
+            <input type="date"
+                   class="form-control"
+                   @bind="FechaHasta"
+                   disabled="@(PeriodoSeleccionado != "Personalizado")" />
         </div>
 
         <div class="filter-group">
             <label>&nbsp;</label>
-            <button class="btn-search">
+            <button type="button"
+                    class="btn-search"
+                    @onclick="async () => await BuscarAsync()">
                 Buscar
             </button>
         </div>
     </div>
 
-    <div class="stats-grid">
+    <div id="area-imprimir">
+        <div class="stats-grid">
 
-        <div class="stat-card">
-            <div>
-                <span class="stat-title">Ventas Totales</span>
-                <h2>$245.300</h2>
-                <small>18 ventas realizadas</small>
+            <div class="stat-card">
+                <div>
+                    <span class="stat-title">Ventas Totales</span>
+                    <h2>@Informe.VentasTotales.ToString("C0")</h2>
+                    <small>@Informe.CantidadVentas ventas realizadas</small>
+                </div>
+                <div class="stat-icon green">💰</div>
             </div>
-            <div class="stat-icon green">💰</div>
+
+            <div class="stat-card">
+                <div>
+                    <span class="stat-title">Pedidos Delivery</span>
+                    <h2>@Informe.PedidosDelivery</h2>
+                    <small>
+                        @(Informe.CantidadVentas > 0
+                            ? $"{(Informe.PedidosDelivery * 100 / (Informe.PedidosDelivery + Informe.PedidosRetiro))}% del total"
+                            : "0% del total")
+                    </small>
+                </div>
+                <div class="stat-icon blue">🛵</div>
+            </div>
+
+            <div class="stat-card">
+                <div>
+                    <span class="stat-title">Pedidos Retiro</span>
+                    <h2>@Informe.PedidosRetiro</h2>
+                    <small>
+                        @(Informe.CantidadVentas > 0
+                            ? $"{(Informe.PedidosRetiro * 100 / (Informe.PedidosDelivery + Informe.PedidosRetiro))}% del total"
+                            : "0% del total")
+                    </small>
+                </div>
+                <div class="stat-icon yellow">🛍️</div>
+            </div>
+
+            <div class="stat-card">
+                <div>
+                    <span class="stat-title">Promedio por Venta</span>
+                    <h2>@Informe.PromedioPorVenta.ToString("C0")</h2>
+                    <small>Por pedido cobrado</small>
+                </div>
+                <div class="stat-icon purple">📈</div>
+            </div>
+
         </div>
 
-        <div class="stat-card">
-            <div>
-                <span class="stat-title">Pedidos Delivery</span>
-                <h2>11</h2>
-                <small>61% del total</small>
-            </div>
-            <div class="stat-icon blue">🛵</div>
-        </div>
+        <div class="reports-content">
 
-        <div class="stat-card">
-            <div>
-                <span class="stat-title">Pedidos Retiro</span>
-                <h2>7</h2>
-                <small>39% del total</small>
-            </div>
-            <div class="stat-icon yellow">🛍️</div>
-        </div>
+            <div class="report-card large">
+                <div class="card-header">
+                    <h3>Ventas por forma de pago</h3>
+                </div>
 
-        <div class="stat-card">
-            <div>
-                <span class="stat-title">Promedio por Venta</span>
-                <h2>$13.628</h2>
-                <small>Por pedido cobrado</small>
-            </div>
-            <div class="stat-icon purple">📈</div>
-        </div>
-
-    </div>
-
-    <div class="reports-content">
-
-        <div class="report-card large">
-            <div class="card-header">
-                <h3>Ventas por forma de pago</h3>
+                <table class="table-report">
+                    <thead>
+                        <tr>
+                            <th>Forma de Pago</th>
+                            <th>Cantidad</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Informe.FormasPago)
+                        {
+                            <tr>
+                                <td>@item.Nombre</td>
+                                <td>@item.Cantidad</td>
+                                <td>@item.Total.ToString("C0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
 
-            <table class="table-report">
-                <thead>
-                    <tr>
-                        <th>Forma de Pago</th>
-                        <th>Cantidad</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>💵 Efectivo</td>
-                        <td>9</td>
-                        <td>$98.000</td>
-                    </tr>
-                    <tr>
-                        <td>💳 Transferencia</td>
-                        <td>5</td>
-                        <td>$82.500</td>
-                    </tr>
-                    <tr>
-                        <td>🏦 Débito</td>
-                        <td>3</td>
-                        <td>$41.000</td>
-                    </tr>
-                    <tr>
-                        <td>💳 Crédito</td>
-                        <td>1</td>
-                        <td>$23.800</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="report-card">
+                <div class="card-header">
+                    <h3>Productos más vendidos</h3>
+                </div>
 
-        <div class="report-card">
-            <div class="card-header">
-                <h3>Productos más vendidos</h3>
+                @if (Informe.ProductosMasVendidos.Any())
+                {
+                    @foreach (var producto in Informe.ProductosMasVendidos)
+                    {
+                        <div class="top-product">
+                            <span class="product-name">@producto.Nombre</span>
+                            <strong>@producto.Cantidad</strong>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="empty-report">No hay productos vendidos</div>
+                }
             </div>
 
-            <div class="top-product">
-                <span>🍔 Hamburguesa Completa</span>
-                <strong>38</strong>
+            <div class="report-card">
+                <div class="card-header">
+                    <h3>Deliveries</h3>
+                </div>
+
+                @foreach (var delivery in Informe.Deliveries)
+                {
+                    <div class="top-product">
+                        <span>🛵 @delivery.Nombre</span>
+                        <strong>@delivery.CantidadEnvios envíos</strong>
+                    </div>
+                }
             </div>
 
-            <div class="top-product">
-                <span>🍕 Pizza Muzarella</span>
-                <strong>31</strong>
-            </div>
-
-            <div class="top-product">
-                <span>🥤 Gaseosa</span>
-                <strong>25</strong>
-            </div>
-
-            <div class="top-product">
-                <span>🍟 Papas fritas</span>
-                <strong>19</strong>
-            </div>
-        </div>
-
-        <div class="report-card">
-            <div class="card-header">
-                <h3>Deliveries</h3>
-            </div>
-
-            <div class="top-product">
-                <span>🛵 Juan</span>
-                <strong>8 envíos</strong>
-            </div>
-
-            <div class="top-product">
-                <span>🛵 Lucas</span>
-                <strong>6 envíos</strong>
-            </div>
-
-            <div class="top-product">
-                <span>🛵 Martín</span>
-                <strong>4 envíos</strong>
-            </div>
         </div>
 
     </div>
-
 </div>
 
+<div id="print-only">
+
+    <h1>Informe de Ventas</h1>
+
+    <p>
+        Desde: @FechaDesde?.ToString("dd/MM/yyyy")
+        -
+        Hasta: @FechaHasta?.ToString("dd/MM/yyyy")
+    </p>
+
+    <hr />
+
+    <h2>Resumen</h2>
+
+    <table class="print-table">
+        <tr>
+            <td>Ventas Totales</td>
+            <td>@Informe.VentasTotales.ToString("C0")</td>
+        </tr>
+        <tr>
+            <td>Cantidad de Ventas</td>
+            <td>@Informe.CantidadVentas</td>
+        </tr>
+        <tr>
+            <td>Pedidos Delivery</td>
+            <td>@Informe.PedidosDelivery</td>
+        </tr>
+        <tr>
+            <td>Pedidos Retiro</td>
+            <td>@Informe.PedidosRetiro</td>
+        </tr>
+        <tr>
+            <td>Promedio por Venta</td>
+            <td>@Informe.PromedioPorVenta.ToString("C0")</td>
+        </tr>
+    </table>
+
+    <h2>Formas de Pago</h2>
+
+    <table class="print-table">
+        <thead>
+            <tr>
+                <th>Forma de Pago</th>
+                <th>Cantidad</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Informe.FormasPago)
+            {
+                <tr>
+                    <td>@item.Nombre</td>
+                    <td>@item.Cantidad</td>
+                    <td>@item.Total.ToString("C0")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h2>Productos más vendidos</h2>
+
+    <table class="print-table">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var producto in Informe.ProductosMasVendidos)
+            {
+                <tr>
+                    <td>@producto.Nombre</td>
+                    <td>@producto.Cantidad</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h2>Deliveries</h2>
+
+    <table class="print-table">
+        <thead>
+            <tr>
+                <th>Delivery</th>
+                <th>Envíos</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var delivery in Informe.Deliveries)
+            {
+                <tr>
+                    <td>@delivery.Nombre</td>
+                    <td>@delivery.CantidadEnvios</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+</div>
+@code {
+
+    private DateTime? FechaDesde = DateTime.Today;
+    private DateTime? FechaHasta = DateTime.Today;
+    private InformeDashboardDto Informe = new();
+
+
+    private string PeriodoSeleccionado { get; set; } = "Hoy";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await BuscarAsync();
+    }
+
+    private async Task Imprimir()
+    {
+        await JS.InvokeVoidAsync("window.print");
+    }
+
+    private async Task BuscarAsync()
+    {
+        Console.WriteLine("ENTRO A BUSCAR");
+        var hoy = DateTime.Today;
+
+        switch (PeriodoSeleccionado)
+        {
+            case "Hoy":
+                FechaDesde = hoy;
+                FechaHasta = hoy;
+                break;
+
+            case "Esta semana":
+                int diasDesdeLunes = ((int)hoy.DayOfWeek + 6) % 7;
+                FechaDesde = hoy.AddDays(-diasDesdeLunes);
+                FechaHasta = hoy;
+                break;
+
+            case "Este mes":
+                FechaDesde = new DateTime(hoy.Year, hoy.Month, 1);
+                FechaHasta = hoy;
+                break;
+
+            case "Personalizado":
+                // usa las fechas elegidas por el usuario
+                break;
+        }
+
+        if (FechaDesde == null || FechaHasta == null)
+            return;
+
+        var filtro = new InformeFiltroDto
+        {
+            FechaDesde = FechaDesde.Value.Date,
+            FechaHasta = FechaHasta.Value.Date
+        };
+
+        Informe = await InformeService.ObtenerDashboardAsync(filtro);
+
+        StateHasChanged();
+    }
+}
+<style>
+    #print-only {
+        display: none;
+    }
+
+    @@media print {
+
+        body * {
+            visibility: hidden !important;
+        }
+
+        #print-only,
+        #print-only * {
+            visibility: visible !important;
+        }
+
+        #print-only {
+            display: block !important;
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15mm;
+            background: white;
+            color: black;
+            z-index: 999999;
+        }
+
+        .reports-page,
+        #area-imprimir,
+        .sidebar,
+        aside,
+        nav,
+        header {
+            display: none !important;
+        }
+
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .print-table th,
+        .print-table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .print-table th {
+            background: #f2f2f2 !important;
+        }
+
+        @@page {
+            size: A4;
+            margin: 10mm;
+        }
+    }
+</style>
