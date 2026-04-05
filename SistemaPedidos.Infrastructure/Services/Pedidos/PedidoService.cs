@@ -53,7 +53,8 @@ public class PedidoService : IPedidoService
                     ProductoNombre = i.Producto!.Nombre,
                     Cantidad = i.Cantidad,
                     PrecioUnitario = i.PrecioUnitario,
-                    Subtotal = i.Subtotal
+                    Subtotal = i.Subtotal,
+                    Observacion = i.Observacion
                 }).ToList()
             })
             .ToListAsync();
@@ -94,7 +95,8 @@ public class PedidoService : IPedidoService
                     ProductoNombre = i.Producto!.Nombre,
                     Cantidad = i.Cantidad,
                     PrecioUnitario = i.PrecioUnitario,
-                    Subtotal = i.Subtotal
+                    Subtotal = i.Subtotal,
+                    Observacion = i.Observacion
                 }).ToList()
             })
             .FirstOrDefaultAsync();
@@ -135,7 +137,8 @@ public class PedidoService : IPedidoService
                 NombreProducto = item.ProductoNombre,
                 Cantidad = item.Cantidad,
                 PrecioUnitario = precioActual,
-                Subtotal = subtotal
+                Subtotal = subtotal,
+                Observacion = item.Observacion
             };
 
             totalProductos += subtotal;

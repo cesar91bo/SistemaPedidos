@@ -123,7 +123,12 @@
                 La cantidad debe ser mayor a 0.
             </div>
         }
-
+        <textarea class="form-control mb-2"
+                  rows="2"
+                  maxlength="150"
+                  @bind="observacionProducto"
+                      placeholder="Detalle opcional">
+        </textarea>
         <button class="btn btn-success" @onclick="AgregarItem">
             Agregar
         </button>
@@ -144,7 +149,16 @@
                 @foreach (var item in items)
                 {
                     <tr>
-                        <td>@item.ProductoNombre</td>
+                            <td>
+                                <div>@item.ProductoNombre</div>
+
+                                @if (!string.IsNullOrWhiteSpace(item.Observacion))
+                                {
+                                    <small class="text-muted fst-italic">
+                                        @item.Observacion
+                                    </small>
+                                }
+                            </td>
                         <td>@item.Cantidad</td>
                         <td>@item.Subtotal.ToString("C")</td>
                     </tr>
@@ -419,6 +433,8 @@
     private PedidoDto? pedidoEnviar;
     private int deliveryParaEnviarId = 0;
 
+    private string observacionProducto = "";
+
     protected override async Task OnInitializedAsync()
     {
         productos = await ProductoService.ObtenerTodosAsync();
@@ -473,11 +489,13 @@
                 ProductoNombre = producto.Nombre,
                 Cantidad = cantidad,
                 PrecioUnitario = producto.PrecioActual,
-                Subtotal = producto.PrecioActual * cantidad
+                Subtotal = producto.PrecioActual * cantidad,
+                Observacion = observacionProducto
             });
         }
 
         productoSeleccionadoId = 0;
+        observacionProducto = "";
         cantidad = 1;
         intentoAgregarProducto = false;
     }
@@ -523,7 +541,8 @@
                 {
                     ProductoId = i.ProductoId,
                     ProductoNombre = i.ProductoNombre,
-                    Cantidad = i.Cantidad
+                    Cantidad = i.Cantidad,
+                    Observacion = i.Observacion
                 }).ToList()
             };
 

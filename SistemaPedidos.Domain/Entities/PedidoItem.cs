@@ -15,4 +15,6 @@ public class PedidoItem
 
     public decimal PrecioUnitario { get; set; } // Snapshot
     public decimal Subtotal { get; set; }       // Snapshot
+
+    public string Observacion { get; set; } = string.Empty;
 }

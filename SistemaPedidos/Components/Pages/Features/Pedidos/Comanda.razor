@@ -53,13 +53,22 @@ else
         <div class="ticket-section">
             @foreach (var item in pedido.Items)
             {
-                <div class="item-row">
-                    <div>
-                        @item.Cantidad x @item.ProductoNombre
+                <div class="item-block">
+                    <div class="item-row">
+                        <div>
+                            @item.Cantidad x @item.ProductoNombre
+                        </div>
+                        <div>
+                            @item.Subtotal.ToString("C0")
+                        </div>
                     </div>
-                    <div>
-                        @item.Subtotal.ToString("C0")
-                    </div>
+            
+                    @if (!string.IsNullOrWhiteSpace(item.Observacion))
+                    {
+                        <div class="item-observacion">
+                            • @item.Observacion
+                        </div>
+                    }
                 </div>
             }
         </div>
@@ -67,13 +76,14 @@ else
         <hr />
 
         <div class="totals">
-            <div class="item-row">
-                <span>Productos</span>
-                <span>@pedido.TotalProductos.ToString("C0")</span>
-            </div>
 
             @if (pedido.PrecioEnvio > 0)
             {
+                <div class="item-row">
+                    <span>Productos</span>
+                    <span>@pedido.TotalProductos.ToString("C0")</span>
+                </div>
+
                 <div class="item-row">
                     <span>Envío</span>
                     <span>@pedido.PrecioEnvio.ToString("C0")</span>
@@ -90,7 +100,7 @@ else
                 <div>Te esperamos nuevamente</div>
 
                 <div class="company-phone">
-                    Consultas y pedidos: 3644 105455
+                    Consultas y pedidos: 3644105455
                 </div>
             </div>
         </div>
@@ -146,6 +156,18 @@ else
         justify-content: space-between;
         margin-bottom: 6px;
         font-size: 13px;
+    }
+
+    .item-block {
+    margin-bottom: 8px;
+    }
+
+    .item-observacion {
+        margin-left: 8px;
+        margin-top: -2px;
+        font-size: 12px;
+        font-style: italic;
+        color: #555;
     }
 
     .totals {

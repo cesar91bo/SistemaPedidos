@@ -82,6 +82,10 @@ public class AppDbContext : DbContext
             .Property(p => p.Subtotal)
             .HasPrecision(18, 2);
 
+        modelBuilder.Entity<PedidoItem>()
+        .Property(p => p.Observacion)
+        .HasMaxLength(150);
+
         modelBuilder.Entity<PrecioProducto>()
             .Property(p => p.Importe)
             .HasPrecision(18, 2);
