@@ -18,6 +18,7 @@ using SistemaPedidos.Infrastructure.Services.Parametros;
 using SistemaPedidos.Infrastructure.Services.Pedidos;
 using SistemaPedidos.Infrastructure.Services.Productos;
 using SistemaPedidos.Infrastructure.Services.Ventas;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +40,12 @@ builder.Services.AddScoped<IParametroService, ParametroService>();
 builder.Services.AddScoped<IDeliveryService, DeliveryService>();
 builder.Services.AddScoped<IInformeService, InformeService>();
 builder.Services.AddScoped<ICajaService, CajaService>();
+
+var cultura = new CultureInfo("es-AR");
+cultura.NumberFormat.CurrencySymbol = "$";
+
+CultureInfo.DefaultThreadCurrentCulture = cultura;
+CultureInfo.DefaultThreadCurrentUICulture = cultura;
 
 var app = builder.Build();
 
