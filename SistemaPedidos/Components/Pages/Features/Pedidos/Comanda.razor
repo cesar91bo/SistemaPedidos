@@ -100,7 +100,13 @@ else
                 <div>Te esperamos nuevamente</div>
 
                 <div class="company-phone">
-                    Consultas y pedidos: 3644105455
+                    <div class="company-phone-label">
+                        Consultas y pedidos
+                    </div>
+
+                    <div class="company-phone-number">
+                        3644 105455
+                    </div>
                 </div>
             </div>
         </div>
@@ -247,10 +253,28 @@ else
             display: none !important;
         }
     }
-    .company-phone {
-    margin-top: 10px;
-    font-size: 13px;
+.company-phone {
+    margin-top: 18px;
+    padding-top: 12px;
+    border-top: 1px dashed #999;
+    text-align: center;
+}
+
+.company-phone-label {
+    font-size: 12px;
     color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.company-phone-number {
+    font-size: 15px;
+    font-weight: bold;
+    color: #000;
+    letter-spacing: 1px;
+    line-height: 1.2;
+}
 }
 </style>
 

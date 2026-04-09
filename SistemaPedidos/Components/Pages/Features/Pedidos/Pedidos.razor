@@ -17,7 +17,10 @@
 @using SistemaPedidos.Application.Features.Parametros.Interfaces
 @using SistemaPedidos.Application.Features.Deliveries.DTOs
 @using SistemaPedidos.Application.Features.Deliveries.Interfaces
+@using SistemaPedidos.Application.Features.Categorias.DTOs
+@using SistemaPedidos.Application.Features.Categorias.Interfaces
 
+@inject ICategoriaService CategoriaService
 @inject IPedidoService PedidoService
 @inject IProductoService ProductoService
 @inject IVentaService VentaService
@@ -99,12 +102,31 @@
 
         <h6>Agregar Producto</h6>
 
-        <select class="form-select mb-2 @(intentoAgregarProducto && productoSeleccionadoId == 0 ? "is-invalid" : "")"
-                @bind="productoSeleccionadoId">
-            <option value="0">Seleccione producto</option>
-            @foreach (var p in productos)
+        <select class="form-select mb-2"
+                @bind="categoriaSeleccionadaId">
+            <option value="0">Seleccione categoría</option>
+
+            @foreach (var categoria in categorias)
             {
-                <option value="@p.Id">@p.Nombre (@p.PrecioActual.ToString("C"))</option>
+                <option value="@categoria.Id">@categoria.Nombre</option>
+            }
+        </select>
+
+        <select class="form-select mb-2 @(intentoAgregarProducto && productoSeleccionadoId == 0 ? "is-invalid" : "")"
+                @bind="productoSeleccionadoId"
+                disabled="@(categoriaSeleccionadaId == 0)">
+
+            <option value="0">
+                @(categoriaSeleccionadaId == 0
+                    ? "Seleccione una categoría primero"
+                    : "Seleccione producto")
+            </option>
+
+            @foreach (var p in productosFiltrados)
+            {
+                <option value="@p.Id">
+                    @p.Nombre (@p.PrecioActual.ToString("C"))
+                </option>
             }
         </select>
 
@@ -132,70 +154,86 @@
                   @bind="observacionProducto"
                       placeholder="Detalle opcional">
         </textarea>
-        <button class="btn btn-success" @onclick="AgregarItem">
-            Agregar
-        </button>
+            <button class="btn btn-success" @onclick="AgregarItem">
+                Agregar
+            </button>
 
-        <hr />
+            <hr />
 
-        <h6>Items</h6>
+            <h6>Items</h6>
 
-        <table class="table table-sm">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Cant</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in items)
-                {
+            <table class="table table-sm align-middle">
+                <thead>
                     <tr>
+                        <th>Producto</th>
+                        <th class="text-center">Cant</th>
+                        <th class="text-end">Subtotal</th>
+                        <th style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in items)
+                    {
+                        <tr>
                             <td>
                                 <div>@item.ProductoNombre</div>
 
                                 @if (!string.IsNullOrWhiteSpace(item.Observacion))
                                 {
-                                    <small class="text-muted fst-italic">
+                                    <small class="text-muted fst-italic d-block">
                                         @item.Observacion
                                     </small>
                                 }
                             </td>
-                        <td>@item.Cantidad</td>
-                        <td>@item.Subtotal.ToString("C")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
 
-        @if (intentoGuardar && !items.Any())
-        {
-            <div class="alert alert-danger mt-2">
-                Debe agregar al menos un producto al pedido.
-            </div>
-        }
+                            <td class="text-center">
+                                @item.Cantidad
+                            </td>
+
+                            <td class="text-end">
+                                @item.Subtotal.ToString("C")
+                            </td>
+
+                            <td class="text-center">
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger"
+                                        title="Eliminar ítem"
+                                        @onclick="() => EliminarItem(item)">
+                                    🗑️
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (intentoGuardar && !items.Any())
+            {
+                <div class="alert alert-danger mt-2">
+                    Debe agregar al menos un producto al pedido.
+                </div>
+            }
+        </div>
+
+        <!-- Panel resumen -->
+        <div class="col-md-6 border p-3">
+
+            <h5>Resumen</h5>
+
+            <p>Total Productos: @totalProductos.ToString("C")</p>
+            <p>Envío: @precioEnvio.ToString("C")</p>
+            <hr />
+            <h4>Total General: @totalGeneral.ToString("C")</h4>
+
+            <button class="btn btn-primary"
+                    disabled="@guardando"
+                    @onclick="GuardarPedido">
+                Guardar Pedido
+            </button>
+
+        </div>
     </div>
-
-    <!-- Panel resumen -->
-    <div class="col-md-6 border p-3">
-
-        <h5>Resumen</h5>
-
-        <p>Total Productos: @totalProductos.ToString("C")</p>
-        <p>Envío: @precioEnvio.ToString("C")</p>
-        <hr />
-        <h4>Total General: @totalGeneral.ToString("C")</h4>
-
-        <button class="btn btn-primary"
-                disabled="@guardando"
-                @onclick="GuardarPedido">
-            Guardar Pedido
-        </button>
-
-    </div>
-</div>
-<hr />
+    <hr />
 
     @if (!hayCajaAbierta)
     {
@@ -204,53 +242,67 @@
         </div>
     }
 
-<h4>Pedidos Activos</h4>
+    <h4>Pedidos Activos</h4>
 
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>Cliente</th>
-            <th>Tipo</th>
-            <th>Detalle</th>
-            <th>Estado</th>
-            <th>Total</th>
-            <th>Hora</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var pedido in pedidosActivos)
-        {
+    <table class="table table-bordered">
+        <thead>
             <tr>
-                <td>@pedido.Id</td>
-                <td>@pedido.NombreCliente</td>
-                <td title="@(pedido.TipoPedidoNombre == "Delivery" && !string.IsNullOrWhiteSpace(pedido.DeliveryNombre)
-                                                                                                                                                            ? $"Envía: {pedido.DeliveryNombre}"
-                                                                                                                                                            : "")">
+                <th>#</th>
+                <th>Cliente</th>
+                <th>Tipo</th>
+                <th>Detalle</th>
+                <th>Estado</th>
+                <th>Total</th>
+                <th>Hora</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pedido in pedidosActivos)
+            {
+                <tr>
+                    <td>@pedido.Id</td>
+                    <td>@pedido.NombreCliente</td>
+                    <td title="@(pedido.TipoPedidoNombre == "Delivery" && !string.IsNullOrWhiteSpace(pedido.DeliveryNombre)
+                                                                                                                                                                                                        ? $"Envía: {pedido.DeliveryNombre}"
+                                                                                                                                                                                                        : "")">
 
-                    @if (pedido.TipoPedidoNombre == "Delivery")
-                    {
-                        <span style="cursor: help; text-decoration: underline dotted;">
+                        @if (pedido.TipoPedidoNombre == "Delivery")
+                        {
+                            <span style="cursor: help; text-decoration: underline dotted;">
+                                @pedido.TipoPedidoNombre
+                            </span>
+                        }
+                        else
+                        {
                             @pedido.TipoPedidoNombre
-                        </span>
-                    }
-                    else
-                    {
-                        @pedido.TipoPedidoNombre
-                    }
-                </td>
-                <td>
-                    @foreach (var item in pedido.Items)
-                    {
-                        <div>
-                            @item.Cantidad x @item.ProductoNombre
-                        </div>
-                    }
-                </td>
-                <td>@pedido.EstadoNombre</td>
-                <td>@pedido.TotalGeneral.ToString("C")</td>
-                <td>@pedido.Fecha.ToString("HH:mm")</td>
+                        }
+                    </td>
+                    <td>
+                        @foreach (var item in pedido.Items)
+                        {
+                            <div title="@(!string.IsNullOrWhiteSpace(item.CategoriaNombre)
+                                                                                                                              ? $"Categoría: {item.CategoriaNombre}"
+                                                                                                                              : "")">
+
+                                @if (!string.IsNullOrWhiteSpace(item.CategoriaNombre))
+                                {
+                                    <span style="cursor: help; text-decoration: underline dotted;">
+                                        @item.Cantidad x @item.ProductoNombre
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span>
+                                        @item.Cantidad x @item.ProductoNombre
+                                    </span>
+                                }
+                            </div>
+                        }
+                    </td>
+                    <td>@pedido.EstadoNombre</td>
+                    <td>@pedido.TotalGeneral.ToString("C")</td>
+                    <td>@pedido.Fecha.ToString("HH:mm")</td>
                     <td style="min-width: 140px;">
                         <div class="d-flex flex-column gap-2">
 
@@ -312,105 +364,105 @@
                         </div>
                     </td>
 
-            </tr>
-        }
-    </tbody>
+                </tr>
+            }
+        </tbody>
 
-</table>
+    </table>
 
-@if (mostrarModalCobro && pedidoCobro != null)
-{
-    <div class="modal show d-block" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content p-3">
+    @if (mostrarModalCobro && pedidoCobro != null)
+    {
+        <div class="modal show d-block" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content p-3">
 
-                <h5>Cobrar Pedido #@pedidoCobro.Id</h5>
+                    <h5>Cobrar Pedido #@pedidoCobro.Id</h5>
 
-                <p>Total: @pedidoCobro.TotalGeneral.ToString("C")</p>
+                    <p>Total: @pedidoCobro.TotalGeneral.ToString("C")</p>
 
-                @foreach (var pago in pagos)
-                {
-                    <div class="row mb-2">
-                        <div class="col">
-                            <select class="form-select" @bind="pago.FormaPago">
-                                @foreach (var forma in Enum.GetValues<FormaPago>())
-                                {
-                                    <option value="@forma">
-                                        @(forma.GetType().GetField(forma.ToString())?.GetCustomAttribute<DisplayAttribute>()?.Name ?? forma.ToString())
-                                    </option>
-                                }
-                            </select>
-                        </div>
-                        <div class="col">
-                            <input type="number"
-                                   class="form-control"
-                                   @bind="pago.Monto" />
-                        </div>
-                    </div>
-                }
-
-                <button class="btn btn-secondary mb-2"
-                        @onclick="() => pagos.Add(new RegistrarPagoDto { FormaPago = FormaPago.Efectivo, Monto = Saldo })">
-                    Agregar otro medio
-                </button>
-
-                <p>Total Pagado: @TotalPagado.ToString("C")</p>
-                <p>Saldo: @Saldo.ToString("C")</p>
-
-                <button class="btn btn-success"
-                        disabled="@(TotalPagado != pedidoCobro.TotalGeneral)"
-                        @onclick="ConfirmarCobro">
-                    Confirmar
-                </button>
-
-                <button class="btn btn-danger"
-                        @onclick="() => mostrarModalCobro = false">
-                    Cancelar
-                </button>
-
-            </div>
-        </div>
-    </div>
-}
-
-@if (mostrarModalDelivery && pedidoEnviar != null)
-{
-    <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,.4)">
-        <div class="modal-dialog">
-            <div class="modal-content p-3">
-
-                <h5>Seleccionar Delivery</h5>
-
-                <p>
-                    Pedido #@pedidoEnviar.Id - @pedidoEnviar.NombreCliente
-                </p>
-
-                <select class="form-select mb-3" @bind="deliveryParaEnviarId">
-                    <option value="0">Seleccione delivery</option>
-
-                    @foreach (var d in deliveries)
+                    @foreach (var pago in pagos)
                     {
-                        <option value="@d.Id">@d.Nombre</option>
+                        <div class="row mb-2">
+                            <div class="col">
+                                <select class="form-select" @bind="pago.FormaPago">
+                                    @foreach (var forma in Enum.GetValues<FormaPago>())
+                                    {
+                                        <option value="@forma">
+                                            @(forma.GetType().GetField(forma.ToString())?.GetCustomAttribute<DisplayAttribute>()?.Name ?? forma.ToString())
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col">
+                                <input type="number"
+                                       class="form-control"
+                                       @bind="pago.Monto" />
+                            </div>
+                        </div>
                     }
-                </select>
 
-                <div class="d-flex gap-2">
-                    <button class="btn btn-primary"
-                            disabled="@(deliveryParaEnviarId == 0)"
-                            @onclick="ConfirmarEnviar">
-                        Confirmar envío
+                    <button class="btn btn-secondary mb-2"
+                            @onclick="() => pagos.Add(new RegistrarPagoDto { FormaPago = FormaPago.Efectivo, Monto = Saldo })">
+                        Agregar otro medio
                     </button>
 
-                    <button class="btn btn-secondary"
-                            @onclick="CerrarModalEnviar">
+                    <p>Total Pagado: @TotalPagado.ToString("C")</p>
+                    <p>Saldo: @Saldo.ToString("C")</p>
+
+                    <button class="btn btn-success"
+                            disabled="@(TotalPagado != pedidoCobro.TotalGeneral)"
+                            @onclick="ConfirmarCobro">
+                        Confirmar
+                    </button>
+
+                    <button class="btn btn-danger"
+                            @onclick="() => mostrarModalCobro = false">
                         Cancelar
                     </button>
-                </div>
 
+                </div>
             </div>
         </div>
-    </div>
-}
+    }
+
+    @if (mostrarModalDelivery && pedidoEnviar != null)
+    {
+        <div class="modal show d-block" tabindex="-1" style="background: rgba(0,0,0,.4)">
+            <div class="modal-dialog">
+                <div class="modal-content p-3">
+
+                    <h5>Seleccionar Delivery</h5>
+
+                    <p>
+                        Pedido #@pedidoEnviar.Id - @pedidoEnviar.NombreCliente
+                    </p>
+
+                    <select class="form-select mb-3" @bind="deliveryParaEnviarId">
+                        <option value="0">Seleccione delivery</option>
+
+                        @foreach (var d in deliveries)
+                        {
+                            <option value="@d.Id">@d.Nombre</option>
+                        }
+                    </select>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary"
+                                disabled="@(deliveryParaEnviarId == 0)"
+                                @onclick="ConfirmarEnviar">
+                            Confirmar envío
+                        </button>
+
+                        <button class="btn btn-secondary"
+                                @onclick="CerrarModalEnviar">
+                            Cancelar
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    }
 
 @code {
     private bool intentoGuardar = false;
@@ -477,8 +529,32 @@
 
     private bool hayCajaAbierta = true;
 
+    private List<CategoriaDto> categorias = new();
+
+    private int _categoriaSeleccionadaId = 0;
+
+    private int categoriaSeleccionadaId
+    {
+        get => _categoriaSeleccionadaId;
+        set
+        {
+            _categoriaSeleccionadaId = value;
+            productoSeleccionadoId = 0;
+        }
+    }
+
+    private List<ProductoDto> productosFiltrados =>
+        categoriaSeleccionadaId == 0
+            ? new List<ProductoDto>()
+            : productos
+                .Where(p => p.CategoriaId == categoriaSeleccionadaId)
+                .OrderBy(p => p.Nombre)
+                .ToList();
+
     protected override async Task OnInitializedAsync()
     {
+        categorias = await CategoriaService.ObtenerSoloActivosAsync();
+
         productos = await ProductoService.ObtenerTodosAsync();
 
         deliveries = await DeliveryService.ObtenerSoloActivosAsync();
@@ -524,30 +600,40 @@
         if (producto == null)
             return;
 
-        var itemExistente = items.FirstOrDefault(i => i.ProductoId == producto.Id);
+        // var itemExistente = items.FirstOrDefault(i => i.ProductoId == producto.Id);
 
-        if (itemExistente != null)
+        // if (itemExistente != null)
+        // {
+        //     itemExistente.Cantidad += cantidad;
+        //     itemExistente.Subtotal = itemExistente.Cantidad * itemExistente.PrecioUnitario;
+        // }
+        // else
+        // {
+        items.Add(new PedidoItemDto
         {
-            itemExistente.Cantidad += cantidad;
-            itemExistente.Subtotal = itemExistente.Cantidad * itemExistente.PrecioUnitario;
-        }
-        else
-        {
-            items.Add(new PedidoItemDto
-            {
-                ProductoId = producto.Id,
-                ProductoNombre = producto.Nombre,
-                Cantidad = cantidad,
-                PrecioUnitario = producto.PrecioActual,
-                Subtotal = producto.PrecioActual * cantidad,
-                Observacion = observacionProducto
-            });
-        }
+            ProductoId = producto.Id,
+            ProductoNombre = producto.Nombre,
+            Cantidad = cantidad,
+            PrecioUnitario = producto.PrecioActual,
+            Subtotal = producto.PrecioActual * cantidad,
+            Observacion = observacionProducto
+        });
+        // }
 
         productoSeleccionadoId = 0;
         observacionProducto = "";
         cantidad = 1;
         intentoAgregarProducto = false;
+    }
+
+    private void EliminarItem(PedidoItemDto item)
+    {
+        items.Remove(item);
+
+        if (!items.Any())
+        {
+            intentoAgregarProducto = false;
+        }
     }
 
     private async Task GuardarPedido()

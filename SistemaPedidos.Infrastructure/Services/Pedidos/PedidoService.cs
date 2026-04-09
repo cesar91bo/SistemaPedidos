@@ -21,6 +21,7 @@ public class PedidoService : IPedidoService
         return await _context.Pedidos
             .Include(p => p.Items)
                 .ThenInclude(i => i.Producto)
+                    .ThenInclude(pr => pr.Categoria)
             .Include(p => p.Delivery)
             .Where(p => p.Activo &&
                 p.Estado != EstadoPedido.Terminado &&
@@ -48,10 +49,14 @@ public class PedidoService : IPedidoService
                 TotalGeneral = p.TotalGeneral,
                 DeliveryId = p.DeliveryId,
                 DeliveryNombre = p.Delivery != null ? p.Delivery.Nombre : null,
+
                 Items = p.Items.Select(i => new PedidoItemDto
                 {
                     ProductoId = i.ProductoId,
                     ProductoNombre = i.Producto!.Nombre,
+                    CategoriaNombre = i.Producto.Categoria != null
+                        ? i.Producto.Categoria.Nombre
+                        : null,
                     Cantidad = i.Cantidad,
                     PrecioUnitario = i.PrecioUnitario,
                     Subtotal = i.Subtotal,
