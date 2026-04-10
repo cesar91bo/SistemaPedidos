@@ -40,6 +40,7 @@ builder.Services.AddScoped<IParametroService, ParametroService>();
 builder.Services.AddScoped<IDeliveryService, DeliveryService>();
 builder.Services.AddScoped<IInformeService, InformeService>();
 builder.Services.AddScoped<ICajaService, CajaService>();
+builder.Services.AddScoped<IPagoDeliveryService, PagoDeliveryService>();
 
 var cultura = new CultureInfo("es-AR");
 cultura.NumberFormat.CurrencySymbol = "$";

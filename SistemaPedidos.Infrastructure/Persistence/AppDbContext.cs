@@ -21,6 +21,8 @@ public class AppDbContext : DbContext
     public DbSet<Delivery> Deliveries { get; set; }
     public DbSet<Caja> Cajas { get; set; }
     public DbSet<MovimientoCaja> MovimientosCaja { get; set; }
+    public DbSet<PagoDelivery> PagosDelivery { get; set; }
+    public DbSet<PagoDeliveryDetalle> PagosDeliveryDetalle { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -172,5 +174,36 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(x => x.PedidoId)
             .OnDelete(DeleteBehavior.Restrict);
-    }
+
+        modelBuilder.Entity<PagoDelivery>()
+            .Property(x => x.Monto)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<PagoDeliveryDetalle>()
+            .Property(x => x.MontoEnvio)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<PagoDelivery>()
+            .HasOne(x => x.Delivery)
+            .WithMany(x => x.PagosDelivery)
+            .HasForeignKey(x => x.DeliveryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PagoDeliveryDetalle>()
+            .HasOne(x => x.PagoDelivery)
+            .WithMany(x => x.Detalles)
+            .HasForeignKey(x => x.PagoDeliveryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PagoDeliveryDetalle>()
+            .HasOne(x => x.Pedido)
+            .WithMany(x => x.PagosDeliveryDetalle)
+            .HasForeignKey(x => x.PedidoId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Pedido>()
+            .HasOne(p => p.Venta)
+            .WithOne(v => v.Pedido)
+            .HasForeignKey<Venta>(v => v.PedidoId);
+         }
 }

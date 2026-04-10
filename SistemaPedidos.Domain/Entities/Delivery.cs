@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SistemaPedidos.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,4 +14,6 @@ public class Delivery
     public string? Telefono { get; set; }
 
     public bool Activo { get; set; } = true;
+
+    public List<PagoDelivery> PagosDelivery { get; set; } = new();
 }

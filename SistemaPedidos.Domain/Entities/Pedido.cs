@@ -33,4 +33,7 @@ public class Pedido
 
     public bool Activo { get; set; } = true;
     public DateTime? FechaBaja { get; set; }
+    public List<PagoDeliveryDetalle> PagosDeliveryDetalle { get; set; } = new();
+
+    public Venta? Venta { get; set; }
 }

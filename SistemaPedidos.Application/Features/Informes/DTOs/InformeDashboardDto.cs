@@ -50,6 +50,8 @@ namespace SistemaPedidos.Application.Features.Informes.DTOs
         public decimal TotalDelivery { get; set; }
 
         public List<DeliveryEnvioDetalleDto> Envios { get; set; } = new();
+
+        public int DeliveryId { get; set; }
     }
 
     public class DeliveryEnvioDetalleDto

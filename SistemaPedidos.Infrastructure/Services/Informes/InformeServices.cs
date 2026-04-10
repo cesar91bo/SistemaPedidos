@@ -92,46 +92,53 @@ namespace SistemaPedidos.Infrastructure.Services.Informes
                 .Take(5)
                 .ToList();
 
+            var pedidosPagadosDelivery = await _context.PagosDelivery
+                .SelectMany(x => x.Detalles)
+                .Select(d => d.PedidoId)
+                .ToListAsync();
+
             var deliveries = ventas
-    .Where(v =>
-        v.Pedido != null &&
-        v.Pedido.DeliveryId != null &&
-        v.Pedido.TipoPedido == TipoPedido.Delivery &&
-        v.TotalEnvio > 0 &&
-        v.Pagos.Any(p => p.FormaPago != FormaPago.Efectivo))
-    .GroupBy(v => new
-    {
-        v.Pedido!.Delivery!.Id,
-        v.Pedido.Delivery.Nombre
-    })
-    .Select(g => new DeliveryInformeDto
-    {
-        Nombre = g.Key.Nombre,
-        CantidadEnvios = g.Count(),
-        TotalDelivery = g.Sum(x => x.TotalEnvio),
+                .Where(v =>
+                    v.Pedido != null &&
+                    v.Pedido.TipoPedido == TipoPedido.Delivery &&
+                    v.Pedido.DeliveryId.HasValue &&
+                    v.Pedido.Delivery != null &&
+                    v.TotalEnvio > 0 &&
+                    v.Pagos.Any(p => p.FormaPago != FormaPago.Efectivo) &&
+                    !pedidosPagadosDelivery.Contains(v.Pedido.Id))
+                 .GroupBy(v => new
+     {
+         DeliveryId = v.Pedido!.DeliveryId!.Value,
+         Nombre = v.Pedido.Delivery!.Nombre
+     })
+     .Select(g => new DeliveryInformeDto
+     {
+         DeliveryId = g.Key.DeliveryId,
+         Nombre = g.Key.Nombre,
+         CantidadEnvios = g.Count(),
+         TotalDelivery = g.Sum(x => x.TotalEnvio),
 
-        Envios = g
-            .OrderByDescending(x => x.FechaVenta)
-            .Select(x => new DeliveryEnvioDetalleDto
-            {
-                PedidoId = x.Pedido!.Id,
-                Fecha = x.FechaVenta,
-                Cliente = x.Pedido.NombreCliente,
-                Direccion = x.Pedido.Direccion ?? "-",
-                TotalPedido = x.TotalGeneral,
-                Envio = x.TotalEnvio,
-                FormaPago = string.Join(", ",
-                    x.Pagos.Select(p => ObtenerNombreFormaPago(p.FormaPago))),
-
-                Productos = x.Pedido.Items
-                    .Select(i => $"{i.Cantidad}x {i.NombreProducto}")
-                    .ToList()
-            })
-            .ToList()
-    })
-    .OrderByDescending(x => x.TotalDelivery)
-    .Take(5)
-    .ToList();
+         Envios = g
+             .OrderByDescending(x => x.FechaVenta)
+             .Select(x => new DeliveryEnvioDetalleDto
+             {
+                 PedidoId = x.Pedido!.Id,
+                 Fecha = x.FechaVenta,
+                 Cliente = x.Pedido.NombreCliente,
+                 Direccion = x.Pedido.Direccion ?? "-",
+                 TotalPedido = x.TotalGeneral,
+                 Envio = x.TotalEnvio,
+                 FormaPago = string.Join(", ",
+                     x.Pagos.Select(p => ObtenerNombreFormaPago(p.FormaPago))),
+                 Productos = x.Pedido.Items
+                     .Select(i => $"{i.Cantidad}x {i.NombreProducto}")
+                     .ToList()
+             })
+             .ToList()
+     })
+     .OrderByDescending(x => x.TotalDelivery)
+     .Take(5)
+     .ToList();
 
             return new InformeDashboardDto
             {

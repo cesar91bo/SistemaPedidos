@@ -1,12 +1,16 @@
 ﻿@page "/informes"
 @rendermode InteractiveServer
+@using SistemaPedidos.Application.Features.Deliveries.Interfaces
+@using SistemaPedidos.Application.Features.Deliveries.DTOs
 @using SistemaPedidos.Application.Features.Ventas
 @using SistemaPedidos.Application.Features.Ventas.DTOs
 @using SistemaPedidos.Application.Features.Informes.DTOs
 @using SistemaPedidos.Application.Features.Informes.Interfaces
+@using SistemaPedidos.Domain.Enums
 
 @inject IInformeService InformeService
 @inject IVentaService VentaService
+@inject IPagoDeliveryService PagoDeliveryService
 @inject IJSRuntime JS
 
 <div class="reports-page">
@@ -175,8 +179,15 @@
                                 </div>
                             </div>
 
-                            <div class="delivery-total">
-                                @delivery.TotalDelivery.ToString("C0")
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <div class="delivery-total">
+                                    @delivery.TotalDelivery.ToString("C0")
+                                </div>
+
+                                <button class="btn-pay-delivery"
+                                        @onclick="() => AbrirPagoDelivery(delivery)">
+                                    Pagar
+                                </button>
                             </div>
                         </div>
 
@@ -338,11 +349,53 @@
     </table>
 
 </div>
+
+@if (MostrarModalPago && DeliverySeleccionado != null)
+{
+    <div class="modal-backdrop">
+        <div class="modal-content-custom">
+
+            <h3>Pagar a @DeliverySeleccionado.Nombre</h3>
+
+            <p>
+                Total a pagar:
+                <strong>@DeliverySeleccionado.TotalDelivery.ToString("C0")</strong>
+            </p>
+
+            <div class="mb-3">
+                <label>Forma de pago</label>
+
+                <select class="form-select" @bind="FormaPagoSeleccionado">
+                    <option value="@FormaPago.Efectivo">Efectivo</option>
+                    <option value="@FormaPago.Transferencia">Transferencia</option>
+                    <option value="@FormaPago.MercadoPago">Mercado Pago</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel"
+                        @onclick="() => MostrarModalPago = false">
+                    Cancelar
+                </button>
+
+                <button class="btn-confirm"
+                        @onclick="ConfirmarPagoDelivery">
+                    Confirmar pago
+                </button>
+            </div>
+
+        </div>
+    </div>
+}
 @code {
 
     private DateTime? FechaDesde = DateTime.Today;
     private DateTime? FechaHasta = DateTime.Today;
     private InformeDashboardDto Informe = new();
+
+    private DeliveryInformeDto? DeliverySeleccionado;
+    private bool MostrarModalPago;
+    private FormaPago FormaPagoSeleccionado = FormaPago.Efectivo;
 
 
     private string PeriodoSeleccionado { get; set; } = "Hoy";
@@ -397,6 +450,33 @@
         Informe = await InformeService.ObtenerDashboardAsync(filtro);
 
         StateHasChanged();
+    }
+
+    private void AbrirPagoDelivery(DeliveryInformeDto delivery)
+    {
+        DeliverySeleccionado = delivery;
+        FormaPagoSeleccionado = FormaPago.Efectivo;
+        MostrarModalPago = true;
+    }
+
+    private async Task ConfirmarPagoDelivery()
+    {
+        if (DeliverySeleccionado == null)
+            return;
+
+        await PagoDeliveryService.RegistrarPagoAsync(new RegistrarPagoDeliveryDto
+        {
+            DeliveryId = DeliverySeleccionado.DeliveryId,
+            FormaPago = FormaPagoSeleccionado,
+            PedidoIds = DeliverySeleccionado.Envios
+                .Select(x => x.PedidoId)
+                .ToList()
+        });
+
+        MostrarModalPago = false;
+        DeliverySeleccionado = null;
+
+        await BuscarAsync();
     }
 }
 <style>
@@ -536,5 +616,55 @@
         font-size: .9rem;
         font-weight: 600;
         color: #111827;
+    }
+
+    .btn-pay-delivery {
+        background: #16a34a;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.45);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .modal-content-custom {
+        width: 100%;
+        max-width: 450px;
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+    }
+
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .btn-cancel {
+        background: #e5e7eb;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 16px;
+    }
+
+    .btn-confirm {
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 16px;
     }
 </style>
