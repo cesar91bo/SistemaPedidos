@@ -57,6 +57,10 @@ public class AppDbContext : DbContext
             .Property(v => v.TotalGeneral)
             .HasPrecision(18, 2);
 
+        modelBuilder.Entity<Venta>()
+            .Property(x => x.MontoDelivery)
+            .HasPrecision(18, 2);
+
         modelBuilder.Entity<Pedido>()
             .Property(p => p.PrecioEnvio)
             .HasPrecision(18, 2);

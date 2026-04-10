@@ -46,5 +46,21 @@ namespace SistemaPedidos.Application.Features.Informes.DTOs
         public string Nombre { get; set; } = string.Empty;
 
         public int CantidadEnvios { get; set; }
+
+        public decimal TotalDelivery { get; set; }
+
+        public List<DeliveryEnvioDetalleDto> Envios { get; set; } = new();
+    }
+
+    public class DeliveryEnvioDetalleDto
+    {
+        public int PedidoId { get; set; }
+        public DateTime Fecha { get; set; }
+        public string Cliente { get; set; } = string.Empty;
+        public string Direccion { get; set; } = string.Empty;
+        public decimal TotalPedido { get; set; }
+        public decimal Envio { get; set; }
+        public string FormaPago { get; set; } = string.Empty;
+        public List<string> Productos { get; set; } = new();
     }
 }

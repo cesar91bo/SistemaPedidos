@@ -31,6 +31,7 @@ namespace SistemaPedidos.Infrastructure.Services.Ventas
 
             var pedido = await _context.Pedidos
                 .Include(p => p.Items)
+                .Include(p => p.Delivery)
                 .FirstOrDefaultAsync(p => p.Id == pedidoId);
 
             if (pedido == null)
@@ -44,6 +45,17 @@ namespace SistemaPedidos.Infrastructure.Services.Ventas
             if (totalPagos != pedido.TotalGeneral)
                 throw new Exception("La suma de los pagos no coincide con el total del pedido.");
 
+            var pagoTodoAlLocal = pagos.All(x => x.FormaPago != FormaPago.Efectivo);
+
+            var montoDelivery = 0m;
+
+            if (pedido.TipoPedido == TipoPedido.Delivery
+                && pedido.DeliveryId.HasValue
+                && pagoTodoAlLocal)
+            {
+                montoDelivery = pedido.PrecioEnvio;
+            }
+
             var venta = new Venta
             {
                 PedidoId = pedido.Id,
@@ -51,6 +63,7 @@ namespace SistemaPedidos.Infrastructure.Services.Ventas
                 TotalProductos = pedido.TotalProductos,
                 TotalEnvio = pedido.PrecioEnvio,
                 TotalGeneral = pedido.TotalGeneral,
+                MontoDelivery = montoDelivery,
                 Anulada = false,
                 Pagos = pagos.Select(x => new Pago
                 {
@@ -62,23 +75,40 @@ namespace SistemaPedidos.Infrastructure.Services.Ventas
 
             _context.Ventas.Add(venta);
 
-            var totalEfectivo = pagos
-                .Where(x => x.FormaPago == FormaPago.Efectivo)
-                .Sum(x => x.Monto);
+            // Lo que realmente ingresa a caja para el local
+            decimal ingresoCaja = 0;
 
-            if (pedido.TipoPedido == TipoPedido.Delivery)
+            foreach (var pago in pagos)
             {
-                totalEfectivo -= pedido.PrecioEnvio;
+                if (pago.FormaPago == FormaPago.Efectivo)
+                {
+                    ingresoCaja += pago.Monto;
 
-                if (totalEfectivo < 0)
-                    totalEfectivo = 0;
+                    // Si el delivery cobra en efectivo, el envío no queda para el local
+                    if (pedido.TipoPedido == TipoPedido.Delivery)
+                    {
+                        ingresoCaja -= pedido.PrecioEnvio;
+                    }
+                }
+                else
+                {
+                    ingresoCaja += pago.Monto;
+                }
             }
 
-            if (totalEfectivo > 0)
+            // Si el cliente transfirió también el envío, ese importe luego va para el delivery
+            ingresoCaja -= montoDelivery;
+
+            if (ingresoCaja < 0)
+                ingresoCaja = 0;
+
+            if (ingresoCaja > 0)
             {
                 await _cajaService.RegistrarIngresoAsync(
-                    totalEfectivo,
-                    $"Cobro pedido #{pedido.Id}",
+                    ingresoCaja,
+                    pedido.TipoPedido == TipoPedido.Delivery && montoDelivery > 0
+                        ? $"Cobro pedido #{pedido.Id} (sin envío de {pedido.Delivery?.Nombre})"
+                        : $"Cobro pedido #{pedido.Id}",
                     pedido.Id
                 );
             }

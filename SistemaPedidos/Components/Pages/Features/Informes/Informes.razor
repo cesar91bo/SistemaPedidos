@@ -159,17 +159,77 @@
 
             <div class="report-card">
                 <div class="card-header">
-                    <h3>Deliveries</h3>
+                    <h3>Deliveries a pagar</h3>
                 </div>
 
-                @foreach (var delivery in Informe.Deliveries)
+                @if (Informe.Deliveries.Any())
                 {
-                    <div class="top-product">
-                        <span>🛵 @delivery.Nombre</span>
-                        <strong>@delivery.CantidadEnvios envíos</strong>
+                    @foreach (var delivery in Informe.Deliveries)
+                    {
+                        <div class="delivery-row">
+                            <div>
+                                <strong>🛵 @delivery.Nombre</strong>
+
+                                <div class="delivery-detail">
+                                    @delivery.CantidadEnvios envíos
+                                </div>
+                            </div>
+
+                            <div class="delivery-total">
+                                @delivery.TotalDelivery.ToString("C0")
+                            </div>
+                        </div>
+
+                        <details class="delivery-expand">
+                            <summary>Ver detalle</summary>
+
+                            @foreach (var envio in delivery.Envios)
+                            {
+                                <div class="delivery-item-detail">
+                                    <div class="delivery-main-info">
+                                        <strong>Pedido #@envio.PedidoId</strong>
+
+                                        <div class="delivery-subtext">
+                                            @envio.Fecha.ToString("dd/MM HH:mm")
+                                        </div>
+
+                                        <div class="delivery-subtext">
+                                            👤 @envio.Cliente
+                                        </div>
+
+                                        <div class="delivery-subtext">
+                                            📍 @envio.Direccion
+                                        </div>
+
+                                        <div class="delivery-subtext">
+                                            @envio.FormaPago
+                                        </div>
+                                    </div>
+
+                                    <div class="delivery-products">
+                                        @foreach (var producto in envio.Productos)
+                                        {
+                                            <div>• @producto</div>
+                                        }
+                                    </div>
+
+                                    <div class="delivery-amounts">
+                                        <div>Pedido: @envio.TotalPedido.ToString("C0")</div>
+                                        <div>Envío: @envio.Envio.ToString("C0")</div>
+                                    </div>
+                                </div>
+                            }
+                        </details>
+                    }
+                }
+                else
+                {
+                    <div class="empty-report">
+                        No hubo deliveries en este período
                     </div>
                 }
             </div>
+
 
         </div>
 
@@ -255,13 +315,14 @@
         </tbody>
     </table>
 
-    <h2>Deliveries</h2>
+    <h2>Deliveries a pagar</h2>
 
     <table class="print-table">
         <thead>
             <tr>
                 <th>Delivery</th>
                 <th>Envíos</th>
+                <th>Total a pagar</th>
             </tr>
         </thead>
         <tbody>
@@ -270,6 +331,7 @@
                 <tr>
                     <td>@delivery.Nombre</td>
                     <td>@delivery.CantidadEnvios</td>
+                    <td>@delivery.TotalDelivery.ToString("C0")</td>
                 </tr>
             }
         </tbody>
@@ -395,5 +457,84 @@
             size: A4;
             margin: 10mm;
         }
+    }
+
+    .delivery-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 0;
+        border-bottom: 1px solid #ececec;
+    }
+
+        .delivery-row:last-child {
+            border-bottom: none;
+        }
+
+    .delivery-detail {
+        margin-top: 4px;
+        color: #6b7280;
+        font-size: .9rem;
+    }
+
+    .delivery-total {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #111827;
+        white-space: nowrap;
+    }
+
+    .delivery-expand {
+        margin-top: 10px;
+        margin-bottom: 16px;
+    }
+
+        .delivery-expand summary {
+            cursor: pointer;
+            color: #2563eb;
+            font-weight: 600;
+            font-size: .95rem;
+            user-select: none;
+        }
+
+        .delivery-expand[open] summary {
+            margin-bottom: 12px;
+        }
+
+    .delivery-item-detail {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr auto;
+        gap: 16px;
+        padding: 14px 0;
+        border-top: 1px solid #ececec;
+        align-items: start;
+    }
+
+    .delivery-main-info {
+        min-width: 0;
+    }
+
+    .delivery-subtext {
+        margin-top: 4px;
+        color: #6b7280;
+        font-size: .88rem;
+    }
+
+    .delivery-products {
+        color: #374151;
+        font-size: .9rem;
+    }
+
+        .delivery-products div {
+            margin-bottom: 4px;
+        }
+
+    .delivery-amounts {
+        text-align: right;
+        white-space: nowrap;
+        font-size: .9rem;
+        font-weight: 600;
+        color: #111827;
     }
 </style>

@@ -407,10 +407,17 @@
                     </button>
 
                     <p>Total Pagado: @TotalPagado.ToString("C")</p>
-                    <p>Saldo: @Saldo.ToString("C")</p>
+                    <p>Saldo: @(Math.Max(Saldo, 0).ToString("C"))</p>
+
+                    @if (Vuelto > 0)
+                    {
+                        <p class="text-success fw-bold">
+                            Vuelto: @Vuelto.ToString("C")
+                        </p>
+                    }
 
                     <button class="btn btn-success"
-                            disabled="@(TotalPagado != pedidoCobro.TotalGeneral)"
+                            disabled="@(TotalPagado < TotalPedido)"
                             @onclick="ConfirmarCobro">
                         Confirmar
                     </button>
@@ -514,6 +521,13 @@
 
     private decimal TotalPagado => pagos.Sum(p => p.Monto);
     private decimal Saldo => (pedidoCobro?.TotalGeneral ?? 0) - TotalPagado;
+
+    private decimal TotalPedido => pedidoCobro?.TotalGeneral ?? 0;
+
+    private decimal Vuelto =>
+        TotalPagado > TotalPedido
+            ? TotalPagado - TotalPedido
+            : 0;
 
     private List<DeliveryDto> deliveries = new();
     private int deliverySeleccionadoId = 0;
@@ -794,7 +808,7 @@
             if (pedidoCobro == null)
                 return;
 
-            if (TotalPagado != pedidoCobro.TotalGeneral)
+            if (TotalPagado < pedidoCobro.TotalGeneral)
                 return;
 
             await VentaService.RegistrarVentaAsync(pedidoCobro.Id, pagos);

@@ -2,49 +2,51 @@
 
 <div class="app-layout">
 
-    <aside class="sidebar">
-        <div class="sidebar-header">
-            <div class="logo-circle">🍽️</div>
-            <div>
-                <h2>EL BUITRE</h2>
-                <small>Restaurante</small>
+    <aside class="sidebar @(sidebarCollapsed ? "collapsed" : "")">
+
+            <div class="sidebar-header" @onclick="ToggleSidebar">
+                <div class="logo-circle">🍽️</div>
+
+                <div class="sidebar-title">
+                    <h2>LEBRÓN</h2>
+                    <small>Sabores Urbanos</small>
+                </div>
             </div>
-        </div>
 
         <nav class="sidebar-menu">
             <NavLink class="menu-item" href="/" Match="NavLinkMatch.All">
                 <span class="menu-icon">🏠</span>
-                Dashboard
+                <span class="menu-text">Dashboard</span>
             </NavLink>
 
             <NavLink class="menu-item" href="/pedidos">
                 <span class="menu-icon">🧾</span>
-                Pedidos
+                <span class="menu-text">Pedidos</span>
             </NavLink>
 
             <NavLink class="menu-item" href="/caja">
                 <span class="menu-icon">💰</span>
-                Caja
+                <span class="menu-text">Caja</span>
             </NavLink>
 
             <NavLink class="menu-item" href="/informes">
                 <span class="menu-icon">📊</span>
-                Informes
+                <span class="menu-text">Informes</span>
             </NavLink>
 
             <NavLink class="menu-item" href="/productos">
                 <span class="menu-icon">🍔</span>
-                Productos
+                <span class="menu-text">Productos</span>
             </NavLink>
 
             <NavLink class="menu-item" href="/categorias">
                 <span class="menu-icon">🍱</span>
-                Categorías
+                <span class="menu-text">Categorías</span>
             </NavLink>
 
             <NavLink class="menu-item" href="/deliveries">
                 <span class="menu-icon">🛵</span>
-                Delivery
+                <span class="menu-text">Delivery</span>
             </NavLink>
         </nav>
     </aside>
@@ -72,34 +74,75 @@
         padding: 24px 18px;
         display: flex;
         flex-direction: column;
+        overflow: hidden;
+        transition: width .25s ease, min-width .25s ease, padding .25s ease;
     }
+
+        .sidebar.collapsed {
+            width: 88px;
+            min-width: 88px;
+            padding: 24px 10px;
+        }
 
     .sidebar-header {
         display: flex;
         align-items: center;
         gap: 14px;
         margin-bottom: 40px;
+        padding: 10px;
+        border-radius: 16px;
+        cursor: pointer;
+        user-select: none;
+        transition: background .2s ease;
+    }
+
+        .sidebar-header:hover {
+            background: rgba(255,255,255,.08);
+        }
+
+    .sidebar.collapsed .sidebar-header {
+        justify-content: center;
+        padding: 10px 0;
     }
 
     .logo-circle {
         width: 54px;
         height: 54px;
+        min-width: 54px;
         border-radius: 16px;
         background: #2563eb;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 28px;
+        flex-shrink: 0;
+    }
+
+    .sidebar-title {
+        overflow: hidden;
+        white-space: nowrap;
+        transition: opacity .2s ease, width .25s ease, margin .25s ease;
+        width: 150px;
+        opacity: 1;
+    }
+
+    .sidebar.collapsed .sidebar-title {
+        width: 0;
+        opacity: 0;
+        margin: 0;
     }
 
     .sidebar-header h2 {
         margin: 0;
         color: white;
         font-size: 22px;
+        line-height: 1.1;
     }
 
     .sidebar-header small {
         color: #9ca3af;
+        display: block;
+        margin-top: 2px;
     }
 
     .sidebar-menu {
@@ -116,8 +159,11 @@
         border-radius: 14px;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 14px;
         font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        transition: all .2s ease;
     }
 
         .menu-item:hover {
@@ -131,9 +177,45 @@
             color: white !important;
         }
 
+    .menu-icon {
+        width: 24px;
+        min-width: 24px;
+        text-align: center;
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+
+    .menu-text {
+        overflow: hidden;
+        white-space: nowrap;
+        opacity: 1;
+        transition: opacity .2s ease, width .25s ease;
+        width: 140px;
+    }
+
+    .sidebar.collapsed .menu-item {
+        justify-content: center;
+        padding: 14px 0;
+        gap: 0;
+    }
+
+    .sidebar.collapsed .menu-text {
+        width: 0;
+        opacity: 0;
+    }
+
     .main-content {
         flex: 1;
         padding: 28px;
+        overflow-x: hidden;
     }
-
 </style>
+
+@code {
+    private bool sidebarCollapsed = false;
+
+    private void ToggleSidebar()
+    {
+        sidebarCollapsed = !sidebarCollapsed;
+    }
+}
