@@ -140,7 +140,8 @@
         <input type="number"
                class="form-control mb-2 @(intentoAgregarProducto && cantidad <= 0 ? "is-invalid" : "")"
                @bind="cantidad"
-               placeholder="Cantidad" />
+               placeholder="Cantidad"
+               @onkeydown="HandleEnterRapido" />
 
         @if (intentoAgregarProducto && cantidad <= 0)
         {
@@ -152,7 +153,9 @@
                   rows="2"
                   maxlength="150"
                   @bind="observacionProducto"
-                      placeholder="Detalle opcional">
+                  @bind:event="oninput"
+                  placeholder="Detalle opcional"
+                      @onkeydown="HandleEnterTextarea">
         </textarea>
             <button class="btn btn-success" @onclick="AgregarItem">
                 Agregar
@@ -565,6 +568,10 @@
                 .OrderBy(p => p.Nombre)
                 .ToList();
 
+    private DateTime? ultimoEnterAgregar;
+    private bool ejecutandoEnter = false;
+    private bool esperandoGuardarConEnter = false;
+
     protected override async Task OnInitializedAsync()
     {
         categorias = await CategoriaService.ObtenerSoloActivosAsync();
@@ -614,15 +621,6 @@
         if (producto == null)
             return;
 
-        // var itemExistente = items.FirstOrDefault(i => i.ProductoId == producto.Id);
-
-        // if (itemExistente != null)
-        // {
-        //     itemExistente.Cantidad += cantidad;
-        //     itemExistente.Subtotal = itemExistente.Cantidad * itemExistente.PrecioUnitario;
-        // }
-        // else
-        // {
         items.Add(new PedidoItemDto
         {
             ProductoId = producto.Id,
@@ -632,8 +630,11 @@
             Subtotal = producto.PrecioActual * cantidad,
             Observacion = observacionProducto
         });
-        // }
 
+        // A partir de ahora, si el próximo Enter viene sin haber elegido otro producto, guarda
+        esperandoGuardarConEnter = true;
+
+        categoriaSeleccionadaId = 0;
         productoSeleccionadoId = 0;
         observacionProducto = "";
         cantidad = 1;
@@ -708,7 +709,20 @@
                 pedidoId = await PedidoService.CrearAsync(dto);
             }
 
-            NavigationManager.NavigateTo($"/pedidos/comanda/{pedidoId}", true);
+            var parametro_imprime = await ParametroService.ObtenerPorCodigoAsync("IMPRIMIR_DIRECTO");
+
+            var imprimirDirecto = parametro_imprime != null &&
+                                  bool.TryParse(parametro_imprime.Valor, out var valor) &&
+                                  valor;
+
+            if (imprimirDirecto)
+            {
+                await JS.InvokeVoidAsync("abrirComandaImpresion", pedidoId);
+            }
+            else
+            {
+                NavigationManager.NavigateTo($"/pedidos/comanda/{pedidoId}", true);
+            }
 
 
             if (tipoPedido == 2 && precioEnvio > 0 && precioEnvio != ultimoPrecioEnvio)
@@ -749,6 +763,13 @@
             editando = false;
             pedidoEditandoId = 0;
             items.Clear();
+
+            categoriaSeleccionadaId = 0;
+            productoSeleccionadoId = 0;
+            observacionProducto = "";
+            cantidad = 1;
+
+            esperandoGuardarConEnter = false;
 
             intentoGuardar = false;
             intentoAgregarProducto = false;
@@ -889,5 +910,63 @@
     {
         await PedidoService.DarDeBajaAsync(pedidoId);
         await CargarPedidosActivos();
+    }
+
+    private async Task EnterRapido()
+    {
+        if (ejecutandoEnter)
+            return;
+
+        ejecutandoEnter = true;
+
+        try
+        {
+            // Si no volvió a seleccionar otro producto y vuelve a dar Enter:
+            if (esperandoGuardarConEnter &&
+                categoriaSeleccionadaId == 0 &&
+                productoSeleccionadoId == 0)
+            {
+                esperandoGuardarConEnter = false;
+                await GuardarPedido();
+                return;
+            }
+
+            // Si seleccionó otro producto, volvemos a modo agregar
+            if (categoriaSeleccionadaId != 0 && productoSeleccionadoId != 0)
+            {
+                esperandoGuardarConEnter = false;
+            }
+
+            AgregarItem();
+        }
+        finally
+        {
+            ejecutandoEnter = false;
+        }
+    }
+
+    private async Task HandleEnterRapido(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            observacionProducto = (observacionProducto ?? "")
+                .Replace("\r", "")
+                .Replace("\n", "");
+
+            await EnterRapido();
+        }
+    }
+    private async Task HandleEnterTextarea(KeyboardEventArgs e)
+    {
+        if (e.Key != "Enter")
+            return;
+
+        observacionProducto = (observacionProducto ?? "")
+            .Replace("\r", "")
+            .Replace("\n", "");
+
+        await EnterRapido();
+
+        StateHasChanged();
     }
 }

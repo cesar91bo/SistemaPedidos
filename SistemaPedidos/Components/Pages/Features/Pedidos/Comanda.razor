@@ -125,99 +125,130 @@ else
 
 <style>
     .ticket-container {
-        width: 80mm;
-        margin: 20px auto;
+        width: 76mm;
+        margin: 0 auto;
         background: white;
-        padding: 12px;
+        padding: 4mm 2mm;
         font-family: Arial, sans-serif;
-        color: black;
+        color: #000;
+        font-size: 15px;
+        font-weight: 600;
     }
 
     .ticket-header {
         text-align: center;
     }
 
-    .logo {
-        max-width: 80px;
-        margin-bottom: 8px;
+        .ticket-header img {
+            width: 220px;
+            max-width: 100%;
+            display: block;
+            margin: 0 auto 10px auto;
+        }
+
+    .ticket-subtitle {
+        font-size: 22px;
+        font-weight: bold;
+        color: #000;
+        margin-top: 4px;
     }
 
-    .ticket-header h2 {
-        margin: 0;
-        font-size: 20px;
-    }
-
-    .ticket-header p {
-        margin: 2px 0;
-        font-size: 13px;
+    .ticket-date {
+        font-size: 18px;
+        font-weight: bold;
+        color: #000;
+        margin-top: 4px;
     }
 
     .ticket-section {
-        font-size: 13px;
-        line-height: 1.5;
+        font-size: 16px;
+        line-height: 1.6;
+        color: #000;
+    }
+
+        .ticket-section strong {
+            color: #000;
+            font-weight: 800;
+        }
+
+    .item-block {
+        margin-bottom: 10px;
     }
 
     .item-row {
         display: flex;
         justify-content: space-between;
-        margin-bottom: 6px;
-        font-size: 13px;
-    }
-
-    .item-block {
-    margin-bottom: 8px;
+        margin-bottom: 8px;
+        font-size: 16px;
+        font-weight: 700;
+        color: #000;
     }
 
     .item-observacion {
-        margin-left: 8px;
-        margin-top: -2px;
-        font-size: 12px;
-        font-style: italic;
-        color: #555;
+        margin-left: 6px;
+        margin-top: 2px;
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 700;
+        color: #000;
     }
 
     .totals {
-        margin-top: 10px;
+        margin-top: 12px;
     }
 
     .total {
-        font-size: 16px;
-        font-weight: bold;
-        margin-top: 10px;
-    }
-
-    .actions {
-        margin-top: 20px;
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-    }
-
-    .ticket-header img {
-        width: 180px;
-        max-width: 100%;
-        display: block;
-        margin: 0 auto 12px auto;
-    }
-
-    .ticket-title {
-        display: none;
+        font-size: 24px;
+        font-weight: 900;
+        margin-top: 12px;
+        color: #000;
     }
 
     .ticket-footer {
         text-align: center;
         margin-top: 24px;
-        font-size: 14px;
-        color: #555;
-        line-height: 1.5;
+        font-size: 16px;
+        line-height: 1.6;
+        color: #000;
+        font-weight: 700;
     }
 
         .ticket-footer strong {
             display: block;
-            font-size: 18px;
+            font-size: 24px;
+            font-weight: 900;
             color: #000;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
         }
+
+    .company-phone {
+        margin-top: 20px;
+        padding-top: 12px;
+        border-top: 2px dashed #000;
+        text-align: center;
+    }
+
+    .company-phone-label {
+        font-size: 14px;
+        color: #000;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+    }
+
+    .company-phone-number {
+        font-size: 22px;
+        font-weight: 900;
+        color: #000;
+        letter-spacing: 2px;
+    }
+
+    hr {
+        border: 0;
+        border-top: 2px dashed #000;
+        margin: 12px 0;
+    }
 
     @@media print {
 
@@ -234,16 +265,20 @@ else
             position: absolute;
             left: 0;
             top: 0;
-            width: 80mm;
+            width: 76mm;
             margin: 0;
-            padding: 5mm;
+            padding: 2mm 1mm;
             background: white;
         }
 
-        .no-print {
-            display: none !important;
+        * {
+            color: #000 !important;
+            opacity: 1 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
 
+        .no-print,
         nav,
         aside,
         header,
@@ -253,29 +288,6 @@ else
             display: none !important;
         }
     }
-.company-phone {
-    margin-top: 18px;
-    padding-top: 12px;
-    border-top: 1px dashed #999;
-    text-align: center;
-}
-
-.company-phone-label {
-    font-size: 12px;
-    color: #666;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-}
-
-.company-phone-number {
-    font-size: 15px;
-    font-weight: bold;
-    color: #000;
-    letter-spacing: 1px;
-    line-height: 1.2;
-}
-}
 </style>
 
 @code {
@@ -301,4 +313,12 @@ else
 
     [Inject]
     private IJSRuntime JS { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("window.focus");
+        }
+    }
 }
