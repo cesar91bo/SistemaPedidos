@@ -1,3 +1,4 @@
+using ApexCharts;
 using Microsoft.EntityFrameworkCore;
 using SistemaPedidos.Application.Features.Caja.Interfaces;
 using SistemaPedidos.Application.Features.Categorias.Interfaces;
@@ -41,6 +42,8 @@ builder.Services.AddScoped<IDeliveryService, DeliveryService>();
 builder.Services.AddScoped<IInformeService, InformeService>();
 builder.Services.AddScoped<ICajaService, CajaService>();
 builder.Services.AddScoped<IPagoDeliveryService, PagoDeliveryService>();
+
+builder.Services.AddApexCharts();
 
 var cultura = new CultureInfo("es-AR");
 cultura.NumberFormat.CurrencySymbol = "$";

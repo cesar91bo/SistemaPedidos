@@ -119,25 +119,22 @@
                     <h3>Ventas por forma de pago</h3>
                 </div>
 
-                <table class="table-report">
-                    <thead>
-                        <tr>
-                            <th>Forma de Pago</th>
-                            <th>Cantidad</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Informe.FormasPago)
-                        {
-                            <tr>
-                                <td>@item.Nombre</td>
-                                <td>@item.Cantidad</td>
-                                <td>@item.Total.ToString("C0")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                @if (DatosFormaPago.Any())
+                {
+                    <ApexChart TItem="GraficoFormaPagoDto">
+
+                        <ApexPointSeries TItem="GraficoFormaPagoDto"
+                                         Items="DatosFormaPago"
+                                         Name="Monto"
+                                         SeriesType="SeriesType.Donut"
+                                         XValue="@(x => x.Nombre)"
+                                         YValue="@(x => x.Total)" />
+                    </ApexChart>
+                }
+                else
+                {
+                    <div class="empty-report">No hay ventas registradas</div>
+                }
             </div>
 
             <div class="report-card">
@@ -147,12 +144,22 @@
 
                 @if (Informe.ProductosMasVendidos.Any())
                 {
-                    @foreach (var producto in Informe.ProductosMasVendidos)
+                    @if (DatosProductos.Any())
                     {
-                        <div class="top-product">
-                            <span class="product-name">@producto.Nombre</span>
-                            <strong>@producto.Cantidad</strong>
-                        </div>
+                        <ApexChart TItem="GraficoProductoDto"
+                                   Title="">
+
+                            <ApexPointSeries TItem="GraficoProductoDto"
+                                             Items="DatosProductos"
+                                             Name="Cantidad"
+                                             SeriesType="SeriesType.Bar"
+                                             XValue="x => x.Nombre"
+                                             YValue="x => x.Cantidad" />
+                        </ApexChart>
+                    }
+                    else
+                    {
+                        <div class="empty-report">No hay productos vendidos</div>
                     }
                 }
                 else
@@ -449,6 +456,22 @@
 
         Informe = await InformeService.ObtenerDashboardAsync(filtro);
 
+        DatosFormaPago = Informe.FormasPago
+            .Select(x => new GraficoFormaPagoDto
+            {
+                Nombre = x.Nombre,
+                Total = x.Total
+            })
+            .ToList();
+
+        DatosProductos = Informe.ProductosMasVendidos
+            .Select(x => new GraficoProductoDto
+            {
+                Nombre = x.Nombre,
+                Cantidad = x.Cantidad
+            })
+            .ToList();
+
         StateHasChanged();
     }
 
@@ -477,6 +500,21 @@
         DeliverySeleccionado = null;
 
         await BuscarAsync();
+    }
+
+    private List<GraficoFormaPagoDto> DatosFormaPago = new();
+    private List<GraficoProductoDto> DatosProductos = new();
+
+    public class GraficoFormaPagoDto
+    {
+        public string Nombre { get; set; } = string.Empty;
+        public decimal Total { get; set; }
+    }
+
+    public class GraficoProductoDto
+    {
+        public string Nombre { get; set; } = string.Empty;
+        public int Cantidad { get; set; }
     }
 }
 <style>
